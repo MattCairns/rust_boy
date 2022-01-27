@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-const CARTRIDGE_SIZE: usize = 0x200000;
+/* const CARTRIDGE_SIZE: usize = 0x200000;
 const HEADER_SIZE: usize = 0x4F;
 const HEADER_START: usize = 0x0100;
-const HEADER_END: usize = 0x014F;
+const HEADER_END: usize = 0x014F; */
 
 #[derive(Debug)]
 pub enum DestinationCode {
@@ -24,7 +24,6 @@ impl std::fmt::Display for DestinationCode {
 }
 
 pub struct CartridgeHeader {
-    pub raw: Vec<u8>,
     pub logo: Vec<u8>,
     pub title: String,
     pub new_licensee_code: u16,
@@ -55,11 +54,10 @@ impl CartridgeHeader {
         };
 
         CartridgeHeader {
-            raw: Vec::new(),
             logo,
             title,
-            new_licensee_code: 0,
-            old_licensee_code: 0,
+            new_licensee_code: 0, // TODO
+            old_licensee_code: 0, // TODO
             sgb_flag: false,
             cartridge_type: data[0x0147],
             rom_size: data[0x0148], // Make this an enum?
@@ -67,13 +65,42 @@ impl CartridgeHeader {
             destination_code,
             rom_version_num: data[0x014C],
             header_checksum: data[0x014D],
-            global_checksum: 0,
+            global_checksum: 0, // TODO
         }
     }
 
     pub fn print_info(&self) {
         println!("TITLE: {}", self.title);
         println!("Destination Code: {}", self.destination_code);
+    }
+
+    pub fn print_logo(&self) {
+        let mut logo_str = String::from("");
+        (0..8).for_each(|y| {
+            let mut i = ((y / 2) % 2) + (y / 4) * 24;
+            (0..12).for_each(|x| {
+                let mut bit_pos = 0;
+                while bit_pos < 8 {
+                    let offset = bit_pos % 8;
+                    let b = self.logo[i] & (1 << offset) != 0;
+
+                    if b == false {
+                        logo_str.push(' ');
+                        logo_str.push(' ');
+                    } else {
+                        logo_str.push('▓');
+                        logo_str.push('▓');
+                    }
+
+                    bit_pos += 1;
+                }
+                // print!("{:2X} {:2X} ", self.data[i], self.data[i + 1]);
+                i += 2;
+            });
+
+            // logo_str.push('\n');
+        });
+        println!("{}", logo_str);
     }
 }
 

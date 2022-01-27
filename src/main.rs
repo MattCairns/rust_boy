@@ -3,6 +3,7 @@ use ndarray::Array3;
 
 use rust_boy::cartridge::Cartridge;
 use rust_boy::cartridge::CartridgeHeader;
+use rust_boy::tile::Tile;
 // const CARTRIDGE_SIZE: usize = 0x200000;
 
 /* fn update(cartridge: Vec<u8>) {
@@ -23,6 +24,10 @@ fn main() {
     let cartridge = Cartridge::load(rom_path); //.expect("Could not read ROM");
     let header = CartridgeHeader::new(&cartridge.data);
 
+    let tile_test = Tile::new(header.logo[0..16].to_vec());
+
     println!("ROM Size: {}kb", cartridge.data.len() / 1024);
     println!("{}", header);
+    println!("{}", tile_test);
+    header.print_logo();
 }
