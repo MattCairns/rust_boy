@@ -1,7 +1,8 @@
 extern crate ndarray;
 use ndarray::Array3;
 
-use rust_boy::cartridge::load_cartridge;
+use rust_boy::cartridge::Cartridge;
+use rust_boy::cartridge::CartridgeHeader;
 // const CARTRIDGE_SIZE: usize = 0x200000;
 
 /* fn update(cartridge: Vec<u8>) {
@@ -17,11 +18,11 @@ fn main() {
     let mut screen = Array3::<u8>::zeros((SCREEN_WIDTH, SCREEN_HEIGHT, RGB_SZ));
     let mut ram: Vec<u8> = Vec::with_capacity(RAM_SZ);
 
-    let rom_path = "roms/test.gbd";
+    let rom_path = "roms/test.gb";
 
-    let cartridge = load_cartridge(rom_path).expect("Could not read ROM");
+    let cartridge = Cartridge::load(rom_path); //.expect("Could not read ROM");
+    let header = CartridgeHeader::new(&cartridge.data);
 
-    println!("ROM Size: {}kb", cartridge.len() / 1024);
-
-    // print!("{:?}", cartridge)
+    println!("ROM Size: {}kb", cartridge.data.len() / 1024);
+    println!("{}", header);
 }
