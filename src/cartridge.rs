@@ -79,26 +79,30 @@ impl CartridgeHeader {
         (0..8).for_each(|y| {
             let mut i = ((y / 2) % 2) + (y / 4) * 24;
             (0..12).for_each(|x| {
-                let mut bit_pos = 0;
-                while bit_pos < 8 {
-                    let offset = bit_pos % 8;
-                    let b = self.logo[i] & (1 << offset) != 0;
+                /* let offset = bit_pos % 8;
+                               let b = self.logo[i] & (1 << offset) != 0;
+                */
+                let nibble: u8 = if (y % 2) == 0 {
+                    self.logo[i] >> 4
+                } else {
+                    self.logo[i] & 0xF
+                };
 
-                    if b == false {
+                (0..4).rev().for_each(|b| {
+                    if (nibble >> b) & 1 == 0 {
                         logo_str.push(' ');
                         logo_str.push(' ');
                     } else {
                         logo_str.push('▓');
                         logo_str.push('▓');
                     }
+                });
 
-                    bit_pos += 1;
-                }
                 // print!("{:2X} {:2X} ", self.data[i], self.data[i + 1]);
                 i += 2;
             });
 
-            // logo_str.push('\n');
+            logo_str.push('\n');
         });
         println!("{}", logo_str);
     }

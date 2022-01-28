@@ -17,8 +17,8 @@ impl std::fmt::Display for Tile {
             let mut bit_pos = 0;
             while bit_pos < 8 {
                 let offset = bit_pos % 8;
-                let lb = self.data[i] & (1 << offset) != 0;
-                let hb = self.data[i + 1] & (1 << offset) != 0;
+                let hb = self.data[i] & (1 << offset) != 0;
+                let lb = self.data[i + 1] & (1 << offset) != 0;
 
                 if lb == false && hb == false {
                     row.push(' ');
