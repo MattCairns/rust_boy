@@ -22,7 +22,7 @@ fn main() {
         println!("{:X?}", memmap.read_byte(i).unwrap());
     }
 
-    let mut cpu = Cpu::load(&memmap);
+    let mut cpu = Cpu::load(&mut memmap);
 
     header.print_logo();
     println!("ROM Size: {}kb", cartridge.data.len() / 1024);

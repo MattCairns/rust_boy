@@ -35,7 +35,7 @@ impl MemoryMap {
         if pos < MemSectors::RomBank1.val() {
             Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "Cannot write to ROM Banks.",
+                format!("Cannot write to ROM Banks at 0x{:X?}.", pos),
             ))
         } else {
             self.memory[pos as usize] = byte;
