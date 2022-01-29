@@ -1,10 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-/* const CARTRIDGE_SIZE: usize = 0x200000;
-const HEADER_SIZE: usize = 0x4F;
-const HEADER_START: usize = 0x0100;
-const HEADER_END: usize = 0x014F; */
 pub struct Cartridge {
     pub data: Vec<u8>,
 }
@@ -12,9 +8,6 @@ pub struct Cartridge {
 impl Cartridge {
     pub fn load(path: &str) -> Self {
         let data = read_file_as_bytes(path).unwrap();
-        /* let header: [u8; HEADER_SIZE] = data[HEADER_START..HEADER_END]
-        .try_into()
-        .expect("Slice is not corrent length"); */
         Self { data }
     }
 }
