@@ -1,4 +1,5 @@
 use rust_boy::cartridge::Cartridge;
+use rust_boy::cpu::Cpu;
 use rust_boy::header::Header;
 use rust_boy::memorymap::MemoryMap;
 
@@ -17,10 +18,20 @@ fn main() {
 
     let mut memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
+    for i in (0x0100..0x010F) {
+        println!("{:X?}", memmap.read_byte(i).unwrap());
+    }
+
+    let mut cpu = Cpu::load(&memmap);
 
     header.print_logo();
     println!("ROM Size: {}kb", cartridge.data.len() / 1024);
     println!("{}", header);
+
+    while true {
+        cpu.step();
+    }
+
     // println!("{:?}", memmap.memory)
 
     // let tile_test = Tile::new(header.logo[0..16].to_vec());
