@@ -79,11 +79,18 @@ impl Header {
         }
     }
 
+    pub fn is_compatible(&self) -> bool {
+        match self.cartridge_type {
+            CartridgeType::RomOnly => true,
+            _ => false,
+        }
+    }
+
     pub fn print_logo(&self) {
         let mut logo_str = String::from("");
         (0..8).for_each(|y| {
             let mut i = ((y / 2) % 2) + (y / 4) * 24;
-            (0..12).for_each(|x| {
+            (0..12).for_each(|_| {
                 let nibble: u8 = if (y % 2) == 0 {
                     self.logo[i] >> 4
                 } else {
@@ -93,9 +100,7 @@ impl Header {
                 (0..4).rev().for_each(|b| {
                     if (nibble >> b) & 1 == 0 {
                         logo_str.push(' ');
-                        logo_str.push(' ');
                     } else {
-                        logo_str.push('▓');
                         logo_str.push('▓');
                     }
                 });

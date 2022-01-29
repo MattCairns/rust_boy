@@ -24,12 +24,22 @@ enum AddRegister {
     L,
 }
 
+enum LoadNRegister {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+}
+
 struct Cpu {
     registers: Registers,
     stack_ptr: u16,
     program_ctr: u16,
 }
 
-impl Cpu {
-    fn ld_n(
-}
+/* impl Cpu {
+    fn ld_nn_n(
+} */
