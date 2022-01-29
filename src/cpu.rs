@@ -12,6 +12,48 @@ struct Registers {
     l: u8,
 }
 
+impl Registers {
+    pub fn set_zero_flag(&mut self) {
+        self.f = set_flag(self.f, 7);
+    }
+
+    pub fn clear_zero_flag(&mut self) {
+        self.f = clear_flag(self.f, 7);
+    }
+
+    pub fn set_sub_flag(&mut self) {
+        self.f = set_flag(self.f, 6);
+    }
+
+    pub fn clear_sub_flag(&mut self) {
+        self.f = clear_flag(self.f, 6);
+    }
+
+    pub fn set_half_carry_flag(&mut self) {
+        self.f = set_flag(self.f, 5);
+    }
+
+    pub fn clear_half_carry_flag(&mut self) {
+        self.f = clear_flag(self.f, 5);
+    }
+
+    pub fn set_carry_flag(&mut self) {
+        self.f = set_flag(self.f, 4);
+    }
+
+    pub fn clear_carry_flag(&mut self) {
+        self.f = clear_flag(self.f, 4);
+    }
+}
+
+fn set_flag(flag: u8, pos: u8) -> u8 {
+    flag & !(1 << pos)
+}
+
+fn clear_flag(flag: u8, pos: u8) -> u8 {
+    flag | (1 << pos)
+}
+
 enum Reg {
     A,
     B,
@@ -48,6 +90,7 @@ impl<'m> Cpu<'m> {
         match opcode {
             0x00 => self.nop(),
             0xC3 => self.jp_nn(),
+            0xAF => self.xor_AA(),
             _ => println!("Opcode not implmented : 0x{:X}", opcode),
         }
     }
@@ -62,8 +105,13 @@ impl<'m> Cpu<'m> {
         let jp_loc = ((hi as u16) << 8) | lo as u16;
         self.pc = jp_loc;
     }
-    /*
-    fn xor_AA(&mut self) {
 
-    } */
+    fn xor_AA(&mut self) {
+        self.registers.a = self.registers.a ^ self.registers.a;
+        self.registers.set_zero_flag();
+        self.registers.clear_half_carry_flag();
+        self.registers.clear_carry_flag();
+        self.registers.clear_sub_flag();
+        self.pc += 1;
+    }
 }
