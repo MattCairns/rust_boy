@@ -18,9 +18,6 @@ fn main() {
 
     let mut memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
-    for i in (0x0100..0x010F) {
-        println!("{:X?}", memmap.read_byte(i).unwrap());
-    }
 
     let mut cpu = Cpu::load(&mut memmap);
 
@@ -28,7 +25,7 @@ fn main() {
     println!("ROM Size: {}kb", cartridge.data.len() / 1024);
     println!("{}", header);
 
-    while true {
+    loop {
         cpu.step();
     }
 
