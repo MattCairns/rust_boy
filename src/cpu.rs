@@ -1,5 +1,5 @@
 use crate::memorymap::MemoryMap;
-use crate::registers::{dec, AnyReg, AnyRegN, DecRegisters, JumpCond, Registers};
+use crate::registers::*;
 
 pub struct Cpu<'m> {
     reg: Registers,
@@ -20,95 +20,134 @@ impl<'m> Cpu<'m> {
 
     pub fn step(&mut self) -> u8 {
         let opcode = self.mem.read_byte(self.pc).unwrap();
-        println!("0x{:X?}", opcode);
+        println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
             0x00 => self.nop(),
-            0x3D => self.dec_reg(DecRegisters::A),
-            0x05 => self.dec_reg(DecRegisters::B),
-            0x0D => self.dec_reg(DecRegisters::C),
-            0x15 => self.dec_reg(DecRegisters::D),
-            0x1D => self.dec_reg(DecRegisters::E),
-            0x25 => self.dec_reg(DecRegisters::H),
-            0x2D => self.dec_reg(DecRegisters::L),
-            0x20 => self.jp_cond(JumpCond::NZ),
-            0x28 => self.jp_cond(JumpCond::Z),
-            0x30 => self.jp_cond(JumpCond::NC),
-            0x38 => self.jp_cond(JumpCond::C),
-            0x7F => self.ld_r_r(AnyReg::A, AnyReg::A),
-            0x78 => self.ld_r_r(AnyReg::A, AnyReg::B),
-            0x79 => self.ld_r_r(AnyReg::A, AnyReg::C),
-            0x7A => self.ld_r_r(AnyReg::A, AnyReg::D),
-            0x7B => self.ld_r_r(AnyReg::A, AnyReg::E),
-            0x7C => self.ld_r_r(AnyReg::A, AnyReg::H),
-            0x7D => self.ld_r_r(AnyReg::A, AnyReg::L),
-            0x7E => self.ld_r_r(AnyReg::A, AnyReg::HL),
-            0x40 => self.ld_r_r(AnyReg::B, AnyReg::B),
-            0x41 => self.ld_r_r(AnyReg::B, AnyReg::C),
-            0x42 => self.ld_r_r(AnyReg::B, AnyReg::D),
-            0x43 => self.ld_r_r(AnyReg::B, AnyReg::E),
-            0x44 => self.ld_r_r(AnyReg::B, AnyReg::H),
-            0x45 => self.ld_r_r(AnyReg::B, AnyReg::L),
-            0x46 => self.ld_r_r(AnyReg::B, AnyReg::HL),
-            0x48 => self.ld_r_r(AnyReg::C, AnyReg::B),
-            0x49 => self.ld_r_r(AnyReg::C, AnyReg::C),
-            0x4A => self.ld_r_r(AnyReg::C, AnyReg::D),
-            0x4B => self.ld_r_r(AnyReg::C, AnyReg::E),
-            0x4C => self.ld_r_r(AnyReg::C, AnyReg::H),
-            0x4D => self.ld_r_r(AnyReg::C, AnyReg::L),
-            0x4E => self.ld_r_r(AnyReg::C, AnyReg::HL),
-            0x50 => self.ld_r_r(AnyReg::D, AnyReg::B),
-            0x51 => self.ld_r_r(AnyReg::D, AnyReg::C),
-            0x52 => self.ld_r_r(AnyReg::D, AnyReg::D),
-            0x53 => self.ld_r_r(AnyReg::D, AnyReg::E),
-            0x54 => self.ld_r_r(AnyReg::D, AnyReg::H),
-            0x55 => self.ld_r_r(AnyReg::D, AnyReg::L),
-            0x56 => self.ld_r_r(AnyReg::D, AnyReg::HL),
-            0x58 => self.ld_r_r(AnyReg::E, AnyReg::B),
-            0x59 => self.ld_r_r(AnyReg::E, AnyReg::C),
-            0x5A => self.ld_r_r(AnyReg::E, AnyReg::D),
-            0x5B => self.ld_r_r(AnyReg::E, AnyReg::E),
-            0x5C => self.ld_r_r(AnyReg::E, AnyReg::H),
-            0x5D => self.ld_r_r(AnyReg::E, AnyReg::L),
-            0x5E => self.ld_r_r(AnyReg::E, AnyReg::HL),
-            0x60 => self.ld_r_r(AnyReg::H, AnyReg::B),
-            0x61 => self.ld_r_r(AnyReg::H, AnyReg::C),
-            0x62 => self.ld_r_r(AnyReg::H, AnyReg::D),
-            0x63 => self.ld_r_r(AnyReg::H, AnyReg::E),
-            0x64 => self.ld_r_r(AnyReg::H, AnyReg::H),
-            0x65 => self.ld_r_r(AnyReg::H, AnyReg::L),
-            0x66 => self.ld_r_r(AnyReg::H, AnyReg::HL),
-            0x68 => self.ld_r_r(AnyReg::L, AnyReg::B),
-            0x69 => self.ld_r_r(AnyReg::L, AnyReg::C),
-            0x6A => self.ld_r_r(AnyReg::L, AnyReg::D),
-            0x6B => self.ld_r_r(AnyReg::L, AnyReg::E),
-            0x6C => self.ld_r_r(AnyReg::L, AnyReg::H),
-            0x6D => self.ld_r_r(AnyReg::L, AnyReg::L),
-            0x6E => self.ld_r_r(AnyReg::L, AnyReg::HL),
-            0x70 => self.ld_r_r(AnyReg::HL, AnyReg::B),
-            0x71 => self.ld_r_r(AnyReg::HL, AnyReg::C),
-            0x72 => self.ld_r_r(AnyReg::HL, AnyReg::D),
-            0x73 => self.ld_r_r(AnyReg::HL, AnyReg::E),
-            0x74 => self.ld_r_r(AnyReg::HL, AnyReg::H),
-            0x75 => self.ld_r_r(AnyReg::HL, AnyReg::L),
-            0x36 => self.ld_r_r(AnyReg::HL, AnyReg::HL),
+            0x3D => self.dec_reg(StdReg::A),
+            0x05 => self.dec_reg(StdReg::B),
+            0x0D => self.dec_reg(StdReg::C),
+            0x15 => self.dec_reg(StdReg::D),
+            0x1D => self.dec_reg(StdReg::E),
+            0x25 => self.dec_reg(StdReg::H),
+            0x2D => self.dec_reg(StdReg::L),
+            0xC0 => self.ret_cc(FlagCond::NZ),
+            0xC8 => self.ret_cc(FlagCond::Z),
+            0xD0 => self.ret_cc(FlagCond::NC),
+            0xD8 => self.ret_cc(FlagCond::C),
+            0x20 => self.jp_cond(FlagCond::NZ),
+            0x28 => self.jp_cond(FlagCond::Z),
+            0x30 => self.jp_cond(FlagCond::NC),
+            0x38 => self.jp_cond(FlagCond::C),
+            0x01 => self.ld_n_nn(LoadRegnnn::BC),
+            0x11 => self.ld_n_nn(LoadRegnnn::DE),
+            0x21 => self.ld_n_nn(LoadRegnnn::HL),
+            0x31 => self.ld_n_nn(LoadRegnnn::SP),
+            0x7F => self.ld_n_a(LoadRegnA::A),
+            0x47 => self.ld_n_a(LoadRegnA::B),
+            0x4F => self.ld_n_a(LoadRegnA::C),
+            0x57 => self.ld_n_a(LoadRegnA::D),
+            0x5F => self.ld_n_a(LoadRegnA::E),
+            0x67 => self.ld_n_a(LoadRegnA::H),
+            0x6F => self.ld_n_a(LoadRegnA::L),
+            0x02 => self.ld_n_a(LoadRegnA::MemBC),
+            0x12 => self.ld_n_a(LoadRegnA::MemDE),
+            0x77 => self.ld_n_a(LoadRegnA::MemHL),
+            0xEA => self.ld_n_a(LoadRegnA::MemNN),
+            0x78 => self.ld_r_r(StdReg::A, StdReg::B),
+            0x79 => self.ld_r_r(StdReg::A, StdReg::C),
+            0x7A => self.ld_r_r(StdReg::A, StdReg::D),
+            0x7B => self.ld_r_r(StdReg::A, StdReg::E),
+            0x7C => self.ld_r_r(StdReg::A, StdReg::H),
+            0x7D => self.ld_r_r(StdReg::A, StdReg::L),
+            0x7E => self.ld_r_r(StdReg::A, StdReg::HL),
+            0x40 => self.ld_r_r(StdReg::B, StdReg::B),
+            0x41 => self.ld_r_r(StdReg::B, StdReg::C),
+            0x42 => self.ld_r_r(StdReg::B, StdReg::D),
+            0x43 => self.ld_r_r(StdReg::B, StdReg::E),
+            0x44 => self.ld_r_r(StdReg::B, StdReg::H),
+            0x45 => self.ld_r_r(StdReg::B, StdReg::L),
+            0x46 => self.ld_r_r(StdReg::B, StdReg::HL),
+            0x48 => self.ld_r_r(StdReg::C, StdReg::B),
+            0x49 => self.ld_r_r(StdReg::C, StdReg::C),
+            0x4A => self.ld_r_r(StdReg::C, StdReg::D),
+            0x4B => self.ld_r_r(StdReg::C, StdReg::E),
+            0x4C => self.ld_r_r(StdReg::C, StdReg::H),
+            0x4D => self.ld_r_r(StdReg::C, StdReg::L),
+            0x4E => self.ld_r_r(StdReg::C, StdReg::HL),
+            0x50 => self.ld_r_r(StdReg::D, StdReg::B),
+            0x51 => self.ld_r_r(StdReg::D, StdReg::C),
+            0x52 => self.ld_r_r(StdReg::D, StdReg::D),
+            0x53 => self.ld_r_r(StdReg::D, StdReg::E),
+            0x54 => self.ld_r_r(StdReg::D, StdReg::H),
+            0x55 => self.ld_r_r(StdReg::D, StdReg::L),
+            0x56 => self.ld_r_r(StdReg::D, StdReg::HL),
+            0x58 => self.ld_r_r(StdReg::E, StdReg::B),
+            0x59 => self.ld_r_r(StdReg::E, StdReg::C),
+            0x5A => self.ld_r_r(StdReg::E, StdReg::D),
+            0x5B => self.ld_r_r(StdReg::E, StdReg::E),
+            0x5C => self.ld_r_r(StdReg::E, StdReg::H),
+            0x5D => self.ld_r_r(StdReg::E, StdReg::L),
+            0x5E => self.ld_r_r(StdReg::E, StdReg::HL),
+            0x60 => self.ld_r_r(StdReg::H, StdReg::B),
+            0x61 => self.ld_r_r(StdReg::H, StdReg::C),
+            0x62 => self.ld_r_r(StdReg::H, StdReg::D),
+            0x63 => self.ld_r_r(StdReg::H, StdReg::E),
+            0x64 => self.ld_r_r(StdReg::H, StdReg::H),
+            0x65 => self.ld_r_r(StdReg::H, StdReg::L),
+            0x66 => self.ld_r_r(StdReg::H, StdReg::HL),
+            0x68 => self.ld_r_r(StdReg::L, StdReg::B),
+            0x69 => self.ld_r_r(StdReg::L, StdReg::C),
+            0x6A => self.ld_r_r(StdReg::L, StdReg::D),
+            0x6B => self.ld_r_r(StdReg::L, StdReg::E),
+            0x6C => self.ld_r_r(StdReg::L, StdReg::H),
+            0x6D => self.ld_r_r(StdReg::L, StdReg::L),
+            0x6E => self.ld_r_r(StdReg::L, StdReg::HL),
+            0x70 => self.ld_r_r(StdReg::HL, StdReg::B),
+            0x71 => self.ld_r_r(StdReg::HL, StdReg::C),
+            0x72 => self.ld_r_r(StdReg::HL, StdReg::D),
+            0x73 => self.ld_r_r(StdReg::HL, StdReg::E),
+            0x74 => self.ld_r_r(StdReg::HL, StdReg::H),
+            0x75 => self.ld_r_r(StdReg::HL, StdReg::L),
+            0x36 => self.ld_r_r(StdReg::HL, StdReg::HL),
+            0x2A => self.ldi_a_memhl(),
             0x06 => self.ld_b_n(),
             0x0E => self.ld_c_n(),
-            0x21 => self.ld_hl_nn(),
             0x32 => self.ld_mem_hl_a(),
             0xC3 => self.jp_nn(),
             0xAF => self.xor_aa(),
             0xDF => self.rst_18(),
-            0xFF => self.rst_38(),
-            0x1F => self.rr_n(AnyReg::A),
+            // 0xFF => self.rst_38(),
+            0x1F => self.rr_n(StdReg::A),
+            0x8F => self.adc_a_n(StdRegN::A),
+            0x88 => self.adc_a_n(StdRegN::B),
+            0x89 => self.adc_a_n(StdRegN::C),
+            0x8A => self.adc_a_n(StdRegN::D),
+            0x8B => self.adc_a_n(StdRegN::E),
+            0x8C => self.adc_a_n(StdRegN::H),
+            0x8D => self.adc_a_n(StdRegN::L),
+            0x8E => self.adc_a_n(StdRegN::HL),
+            0xCE => self.adc_a_n(StdRegN::N),
+            0x3C => self.inc_reg(StdReg::A),
+            0x04 => self.inc_reg(StdReg::B),
+            0x0C => self.inc_reg(StdReg::C),
+            0x14 => self.inc_reg(StdReg::D),
+            0x1C => self.inc_reg(StdReg::E),
+            0x24 => self.inc_reg(StdReg::H),
+            0x2C => self.inc_reg(StdReg::L),
+            0x34 => self.inc_reg(StdReg::HL),
             // 0x18 => self.rr_n(AnyReg::B),
             // 0x19 => self.rr_n(AnyReg::C),
             // 0x1A => self.rr_n(AnyReg::D),
             // 0x1B => self.rr_n(AnyReg::E),
             // 0x1C => self.rr_n(AnyReg::H),
             // 0x1D => self.rr_n(AnyReg::L),
-            // 0x1E => self.rr_n(AnyReg::HL),
+            0x1E => self.rr_n(StdReg::HL),
             _ => {
-                println!("Opcode not implmented : 0x{:X}", opcode);
+                println!("Opcode not implmented : {:#04X}", opcode);
+                println!(
+                    "Next byte = {:#04X?}",
+                    self.mem.read_byte(self.pc + 1).unwrap()
+                );
                 std::process::abort()
             }
         }
@@ -119,87 +158,222 @@ impl<'m> Cpu<'m> {
         4
     }
 
-    fn adc(&mut self, reg: AnyRegN) -> u8 {
+    fn adc_a_n(&mut self, reg: StdRegN) -> u8 {
         let cycles = 4;
         self.pc += 1;
 
+        let carry = self.reg.get_carry();
+
         match reg {
-            AnyRegN::A => {
-                self.reg.a += self.reg.a;
+            StdRegN::A => {
+                if will_half_carry(self.reg.a, self.reg.a) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.a) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.a + carry;
             }
-            AnyRegN::B => todo!(),
-            AnyRegN::C => todo!(),
-            AnyRegN::D => todo!(),
-            AnyRegN::E => todo!(),
-            AnyRegN::H => todo!(),
-            AnyRegN::L => todo!(),
-            AnyRegN::HL => todo!(),
-            AnyRegN::N => todo!(),
+            StdRegN::B => {
+                if will_half_carry(self.reg.a, self.reg.b) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.b) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.b + carry;
+            }
+            StdRegN::C => {
+                if will_half_carry(self.reg.a, self.reg.c) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.c) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.c + carry;
+            }
+            StdRegN::D => {
+                if will_half_carry(self.reg.a, self.reg.d) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.d) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.d + carry;
+            }
+            StdRegN::E => {
+                if will_half_carry(self.reg.a, self.reg.e) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.e) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.e + carry;
+            }
+            StdRegN::H => {
+                if will_half_carry(self.reg.a, self.reg.h) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.h) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.h + carry;
+            }
+            StdRegN::L => {
+                if will_half_carry(self.reg.a, self.reg.l) {
+                    self.reg.set_half_carry_flag();
+                };
+                if will_carry(self.reg.a, self.reg.l) {
+                    self.reg.set_carry_flag();
+                };
+                self.reg.a += self.reg.l + carry;
+            }
+            StdRegN::HL => todo!(),
+            StdRegN::N => todo!(),
         }
 
         cycles
     }
 
-    fn dec_reg(&mut self, reg: DecRegisters) -> u8 {
-        self.pc += 1;
-        let half_carry: bool = match reg {
-            DecRegisters::A => {
-                let dec = dec(self.reg.a, 0x01);
-                self.reg.a = dec.0;
-                dec.1
+    fn inc_reg(&mut self, reg: StdReg) -> u8 {
+        let mut cycles = 4;
+        let val: (u8, bool) = match reg {
+            StdReg::A => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.a = inc.0;
+                inc
             }
-            DecRegisters::B => {
-                let dec = dec(self.reg.b, 0x01);
-                self.reg.b = dec.0;
-                dec.1
+            StdReg::B => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.b = inc.0;
+                inc
             }
-            DecRegisters::C => {
-                let dec = dec(self.reg.c, 0x01);
-                self.reg.c = dec.0;
-                dec.1
+            StdReg::C => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.c = inc.0;
+                inc
             }
-            DecRegisters::D => {
-                let dec = dec(self.reg.d, 0x01);
-                self.reg.d = dec.0;
-                dec.1
+            StdReg::D => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.d = inc.0;
+                inc
             }
-            DecRegisters::E => {
-                let dec = dec(self.reg.e, 0x01);
-                self.reg.e = dec.0;
-                dec.1
+            StdReg::E => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.e = inc.0;
+                inc
             }
-            DecRegisters::H => {
-                let dec = dec(self.reg.h, 0x01);
-                self.reg.h = dec.0;
-                dec.1
+            StdReg::H => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.h = inc.0;
+                inc
             }
-            DecRegisters::L => {
-                let dec = dec(self.reg.l, 0x01);
-                self.reg.l = dec.0;
-                dec.1
+            StdReg::L => {
+                let inc = inc(self.reg.a, 0x01);
+                self.reg.l = inc.0;
+                inc
             }
-            DecRegisters::HL => todo!(),
+            StdReg::HL => todo!(),
         };
 
-        if half_carry {
+        if val.0 == 0x00 {
+            self.reg.set_zero_flag();
+        }
+
+        if val.1 {
+            self.reg.set_half_carry_flag();
+        }
+
+        self.reg.unset_sub_flag();
+
+        self.pc += 1;
+
+        cycles
+    }
+
+    fn dec_reg(&mut self, reg: StdReg) -> u8 {
+        self.pc += 1;
+        let val: (u8, bool) = match reg {
+            StdReg::A => {
+                let dec = dec(self.reg.a, 0x01);
+                self.reg.a = dec.0;
+                dec
+            }
+            StdReg::B => {
+                let dec = dec(self.reg.b, 0x01);
+                self.reg.b = dec.0;
+                dec
+            }
+            StdReg::C => {
+                let dec = dec(self.reg.c, 0x01);
+                self.reg.c = dec.0;
+                dec
+            }
+            StdReg::D => {
+                let dec = dec(self.reg.d, 0x01);
+                self.reg.d = dec.0;
+                dec
+            }
+            StdReg::E => {
+                let dec = dec(self.reg.e, 0x01);
+                self.reg.e = dec.0;
+                dec
+            }
+            StdReg::H => {
+                let dec = dec(self.reg.h, 0x01);
+                self.reg.h = dec.0;
+                dec
+            }
+            StdReg::L => {
+                let dec = dec(self.reg.l, 0x01);
+                self.reg.l = dec.0;
+                dec
+            }
+            StdReg::HL => todo!(),
+        };
+
+        if val.0 == 0x00 {
+            self.reg.set_zero_flag();
+        }
+
+        if val.1 {
             self.reg.set_half_carry_flag();
         }
 
         self.reg.set_sub_flag();
 
         match reg {
-            DecRegisters::HL => 12,
+            StdReg::HL => 12,
             _ => 4,
         }
     }
 
-    fn jp_cond(&mut self, cond: JumpCond) -> u8 {
+    fn ret_cc(&mut self, cond: FlagCond) -> u8 {
+        let cycles = 8;
+
         if cond.check(self.reg.f) {
+            self.pc = self.pop();
+        } else {
             self.pc += 1;
-            self.pc = self.pc + self.mem.read_byte(self.pc).unwrap() as u16;
         }
 
-        8
+        cycles
+    }
+
+    // BUG Need to convert to signed byte
+    fn jp_cond(&mut self, cond: FlagCond) -> u8 {
+        let mut cycles = 8;
+        if cond.check(self.reg.f) {
+            cycles = 12;
+            let v = self.mem.read_byte(self.pc + 0x01).unwrap() as i16;
+            println!("{:#2X?}", v);
+            self.pc += v;
+            println!("JR {:?} {:#6X?}", cond, self.pc);
+        } else {
+            self.pc += 1;
+        }
+
+        cycles
     }
 
     fn jp_nn(&mut self) -> u8 {
@@ -222,112 +396,112 @@ impl<'m> Cpu<'m> {
         4
     }
 
-    fn ld_r_r(&mut self, r1: AnyReg, r2: AnyReg) -> u8 {
+    fn ld_r_r(&mut self, r1: StdReg, r2: StdReg) -> u8 {
         println!("LD {:?} {:?}", r1, r2);
         let mut cycles = 4;
         let ret = match r1 {
-            AnyReg::A => match r2 {
-                AnyReg::A => self.reg.a = self.reg.a,
-                AnyReg::B => self.reg.a = self.reg.b,
-                AnyReg::C => self.reg.a = self.reg.c,
-                AnyReg::D => self.reg.a = self.reg.d,
-                AnyReg::E => self.reg.a = self.reg.e,
-                AnyReg::H => self.reg.a = self.reg.h,
-                AnyReg::L => self.reg.a = self.reg.l,
-                AnyReg::HL => {
+            StdReg::A => match r2 {
+                StdReg::A => self.reg.a = self.reg.a,
+                StdReg::B => self.reg.a = self.reg.b,
+                StdReg::C => self.reg.a = self.reg.c,
+                StdReg::D => self.reg.a = self.reg.d,
+                StdReg::E => self.reg.a = self.reg.e,
+                StdReg::H => self.reg.a = self.reg.h,
+                StdReg::L => self.reg.a = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.a = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::B => match r2 {
-                AnyReg::A => self.reg.b = self.reg.a,
-                AnyReg::B => self.reg.b = self.reg.b,
-                AnyReg::C => self.reg.b = self.reg.c,
-                AnyReg::D => self.reg.b = self.reg.d,
-                AnyReg::E => self.reg.b = self.reg.e,
-                AnyReg::H => self.reg.b = self.reg.h,
-                AnyReg::L => self.reg.b = self.reg.l,
-                AnyReg::HL => {
+            StdReg::B => match r2 {
+                StdReg::A => self.reg.b = self.reg.a,
+                StdReg::B => self.reg.b = self.reg.b,
+                StdReg::C => self.reg.b = self.reg.c,
+                StdReg::D => self.reg.b = self.reg.d,
+                StdReg::E => self.reg.b = self.reg.e,
+                StdReg::H => self.reg.b = self.reg.h,
+                StdReg::L => self.reg.b = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.b = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::C => match r2 {
-                AnyReg::A => self.reg.c = self.reg.a,
-                AnyReg::B => self.reg.c = self.reg.b,
-                AnyReg::C => self.reg.c = self.reg.c,
-                AnyReg::D => self.reg.c = self.reg.d,
-                AnyReg::E => self.reg.c = self.reg.e,
-                AnyReg::H => self.reg.c = self.reg.h,
-                AnyReg::L => self.reg.c = self.reg.l,
-                AnyReg::HL => {
+            StdReg::C => match r2 {
+                StdReg::A => self.reg.c = self.reg.a,
+                StdReg::B => self.reg.c = self.reg.b,
+                StdReg::C => self.reg.c = self.reg.c,
+                StdReg::D => self.reg.c = self.reg.d,
+                StdReg::E => self.reg.c = self.reg.e,
+                StdReg::H => self.reg.c = self.reg.h,
+                StdReg::L => self.reg.c = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.c = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::D => match r2 {
-                AnyReg::A => self.reg.d = self.reg.a,
-                AnyReg::B => self.reg.d = self.reg.b,
-                AnyReg::C => self.reg.d = self.reg.c,
-                AnyReg::D => self.reg.d = self.reg.d,
-                AnyReg::E => self.reg.d = self.reg.e,
-                AnyReg::H => self.reg.d = self.reg.h,
-                AnyReg::L => self.reg.d = self.reg.l,
-                AnyReg::HL => {
+            StdReg::D => match r2 {
+                StdReg::A => self.reg.d = self.reg.a,
+                StdReg::B => self.reg.d = self.reg.b,
+                StdReg::C => self.reg.d = self.reg.c,
+                StdReg::D => self.reg.d = self.reg.d,
+                StdReg::E => self.reg.d = self.reg.e,
+                StdReg::H => self.reg.d = self.reg.h,
+                StdReg::L => self.reg.d = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.d = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::E => match r2 {
-                AnyReg::A => self.reg.e = self.reg.a,
-                AnyReg::B => self.reg.e = self.reg.b,
-                AnyReg::C => self.reg.e = self.reg.c,
-                AnyReg::D => self.reg.e = self.reg.d,
-                AnyReg::E => self.reg.e = self.reg.e,
-                AnyReg::H => self.reg.e = self.reg.h,
-                AnyReg::L => self.reg.e = self.reg.l,
-                AnyReg::HL => {
+            StdReg::E => match r2 {
+                StdReg::A => self.reg.e = self.reg.a,
+                StdReg::B => self.reg.e = self.reg.b,
+                StdReg::C => self.reg.e = self.reg.c,
+                StdReg::D => self.reg.e = self.reg.d,
+                StdReg::E => self.reg.e = self.reg.e,
+                StdReg::H => self.reg.e = self.reg.h,
+                StdReg::L => self.reg.e = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.e = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::H => match r2 {
-                AnyReg::A => self.reg.h = self.reg.a,
-                AnyReg::B => self.reg.h = self.reg.b,
-                AnyReg::C => self.reg.h = self.reg.c,
-                AnyReg::D => self.reg.h = self.reg.d,
-                AnyReg::E => self.reg.h = self.reg.e,
-                AnyReg::H => self.reg.h = self.reg.h,
-                AnyReg::L => self.reg.h = self.reg.l,
-                AnyReg::HL => {
+            StdReg::H => match r2 {
+                StdReg::A => self.reg.h = self.reg.a,
+                StdReg::B => self.reg.h = self.reg.b,
+                StdReg::C => self.reg.h = self.reg.c,
+                StdReg::D => self.reg.h = self.reg.d,
+                StdReg::E => self.reg.h = self.reg.e,
+                StdReg::H => self.reg.h = self.reg.h,
+                StdReg::L => self.reg.h = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.h = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::L => match r2 {
-                AnyReg::A => self.reg.l = self.reg.a,
-                AnyReg::B => self.reg.l = self.reg.b,
-                AnyReg::C => self.reg.l = self.reg.c,
-                AnyReg::D => self.reg.l = self.reg.d,
-                AnyReg::E => self.reg.l = self.reg.e,
-                AnyReg::H => self.reg.l = self.reg.h,
-                AnyReg::L => self.reg.l = self.reg.l,
-                AnyReg::HL => {
+            StdReg::L => match r2 {
+                StdReg::A => self.reg.l = self.reg.a,
+                StdReg::B => self.reg.l = self.reg.b,
+                StdReg::C => self.reg.l = self.reg.c,
+                StdReg::D => self.reg.l = self.reg.d,
+                StdReg::E => self.reg.l = self.reg.e,
+                StdReg::H => self.reg.l = self.reg.h,
+                StdReg::L => self.reg.l = self.reg.l,
+                StdReg::HL => {
                     cycles = cycles + 4;
                     self.reg.l = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
-            AnyReg::HL => {
+            StdReg::HL => {
                 cycles = cycles + 4;
                 match r2 {
-                    AnyReg::A => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
-                    AnyReg::B => self.mem.write_byte(self.reg.get_hl(), self.reg.b).unwrap(),
-                    AnyReg::C => self.mem.write_byte(self.reg.get_hl(), self.reg.c).unwrap(),
-                    AnyReg::D => self.mem.write_byte(self.reg.get_hl(), self.reg.d).unwrap(),
-                    AnyReg::E => self.mem.write_byte(self.reg.get_hl(), self.reg.e).unwrap(),
-                    AnyReg::H => self.mem.write_byte(self.reg.get_hl(), self.reg.h).unwrap(),
-                    AnyReg::L => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
-                    AnyReg::HL => {
+                    StdReg::A => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
+                    StdReg::B => self.mem.write_byte(self.reg.get_hl(), self.reg.b).unwrap(),
+                    StdReg::C => self.mem.write_byte(self.reg.get_hl(), self.reg.c).unwrap(),
+                    StdReg::D => self.mem.write_byte(self.reg.get_hl(), self.reg.d).unwrap(),
+                    StdReg::E => self.mem.write_byte(self.reg.get_hl(), self.reg.e).unwrap(),
+                    StdReg::H => self.mem.write_byte(self.reg.get_hl(), self.reg.h).unwrap(),
+                    StdReg::L => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
+                    StdReg::HL => {
                         self.pc += 1;
                         self.mem
                             .write_byte(self.reg.get_hl(), self.mem.read_byte(self.pc).unwrap())
@@ -341,6 +515,19 @@ impl<'m> Cpu<'m> {
         cycles
     }
 
+    fn ldi_a_memhl(&mut self) -> u8 {
+        println!("LD A [HL++]");
+        let mut hl = self.reg.get_hl();
+
+        self.reg.a = self.mem.read_byte(hl).unwrap();
+        hl += 1;
+        self.reg.set_hl(hl);
+
+        self.pc += 1;
+
+        8
+    }
+
     fn ld_mem_hl_a(&mut self) -> u8 {
         self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
         self.pc += 1;
@@ -348,38 +535,79 @@ impl<'m> Cpu<'m> {
         8
     }
 
-    fn ld_hl_nn(&mut self) -> u8 {
-        self.pc += 1;
-        let n0 = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
-        let n1 = self.mem.read_byte(self.pc).unwrap();
+    fn ld_n_a(&mut self, reg: LoadRegnA) -> u8 {
+        let mut cycles = 4;
+        println!("LD {:?} A", reg);
+        match reg {
+            LoadRegnA::A => self.reg.a = self.reg.a,
+            LoadRegnA::B => self.reg.b = self.reg.a,
+            LoadRegnA::C => self.reg.c = self.reg.a,
+            LoadRegnA::D => self.reg.d = self.reg.a,
+            LoadRegnA::E => self.reg.e = self.reg.a,
+            LoadRegnA::H => self.reg.h = self.reg.a,
+            LoadRegnA::L => self.reg.l = self.reg.a,
+            LoadRegnA::MemBC => {
+                cycles = 8;
+                self.mem.write_byte(self.reg.get_bc(), self.reg.a).unwrap();
+            }
+            LoadRegnA::MemDE => {
+                cycles = 8;
+                self.mem.write_byte(self.reg.get_de(), self.reg.a).unwrap();
+            }
+            LoadRegnA::MemHL => {
+                cycles = 8;
+                self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
+            }
+            LoadRegnA::MemNN => {
+                cycles = 16;
+                self.pc += 1;
+                let low = self.mem.read_byte(self.pc).unwrap();
+                self.pc += 1;
+                let high = self.mem.read_byte(self.pc).unwrap();
+                self.mem
+                    .write_byte(self.reg.get_nn(low, high), self.reg.a)
+                    .unwrap();
+            }
+        };
+
         self.pc += 1;
 
-        self.reg.h = n0;
-        self.reg.l = n1;
+        cycles
+    }
 
-        12
+    fn ld_n_nn(&mut self, reg: LoadRegnnn) -> u8 {
+        let cycles = 12;
+
+        let nn = self.read_u16();
+        println!("LD {:?} {:#6X?}", reg, nn);
+
+        match reg {
+            LoadRegnnn::BC => self.reg.set_bc(nn),
+            LoadRegnnn::DE => self.reg.set_de(nn),
+            LoadRegnnn::HL => self.reg.set_hl(nn),
+            LoadRegnnn::SP => self.sp = nn,
+        }
+        self.pc += 1;
+        cycles
     }
 
     fn ld_c_n(&mut self) -> u8 {
-        self.pc += 1;
-        let n = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
+        self.reg.c = self.read_u8();
 
-        self.reg.c = n;
+        println!("LD C {:#4X?}", self.reg.c);
+
+        self.pc += 1;
 
         8
     }
 
     fn ld_b_n(&mut self) -> u8 {
+        self.reg.b = self.read_u8();
         self.pc += 1;
-        let n = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
-
-        self.reg.b = n;
 
         8
     }
+
     fn rst_18(&mut self) -> u8 {
         self.push();
         self.pc = 0x0018;
@@ -392,12 +620,12 @@ impl<'m> Cpu<'m> {
         32
     }
 
-    fn rr_n(&mut self, reg: AnyReg) -> u8 {
+    fn rr_n(&mut self, reg: StdReg) -> u8 {
         let mut cycles = 8;
         let c;
 
         match reg {
-            AnyReg::A => {
+            StdReg::A => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -406,7 +634,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::B => {
+            StdReg::B => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -415,7 +643,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::C => {
+            StdReg::C => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -424,7 +652,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::D => {
+            StdReg::D => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -433,7 +661,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::E => {
+            StdReg::E => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -442,7 +670,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::H => {
+            StdReg::H => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -451,7 +679,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::L => {
+            StdReg::L => {
                 c = self.reg.a & 0x01;
                 self.reg.a = self.reg.a.rotate_right(1);
                 if self.reg.is_carry() {
@@ -460,7 +688,7 @@ impl<'m> Cpu<'m> {
                     self.reg.a = self.reg.a & 0x7F;
                 }
             }
-            AnyReg::HL => {
+            StdReg::HL => {
                 cycles = cycles + 8;
                 let mut val = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 c = val & 0x01;
@@ -494,10 +722,24 @@ impl<'m> Cpu<'m> {
     }
 
     fn pop(&mut self) -> u16 {
+        println!("sp = {:#6X?}", self.sp);
         let lo = self.mem.read_byte(self.sp).unwrap();
         self.sp += 1;
         let hi = self.mem.read_byte(self.sp).unwrap();
         self.sp += 1;
         ((hi as u16) << 8) | lo as u16
+    }
+
+    fn read_u8(&mut self) -> u8 {
+        self.pc += 1;
+        self.mem.read_byte(self.pc).unwrap()
+    }
+
+    fn read_u16(&mut self) -> u16 {
+        self.pc += 1;
+        let low = self.mem.read_byte(self.pc).unwrap();
+        self.pc += 1;
+        let high = self.mem.read_byte(self.pc).unwrap();
+        self.reg.get_nn(low, high)
     }
 }

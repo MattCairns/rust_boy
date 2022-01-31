@@ -4,26 +4,26 @@ use rust_boy::header::Header;
 use rust_boy::memorymap::MemoryMap;
 
 fn main() {
-    let rom_path = "roms/tetris.gb";
+    let rom_path = "roms/ldrr.gb";
 
     let cartridge = Cartridge::load(rom_path);
-    let header = Header::new(&cartridge.data);
+    /* let header = Header::new(&cartridge.data);
     if !header.is_compatible() {
         println!(
             "{:?} is not supported by rust_boy yet.",
             header.cartridge_type
         );
         std::process::exit(0);
-    }
+    } */
 
     let mut memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
 
     let mut cpu = Cpu::load(&mut memmap);
 
-    header.print_logo();
+    // header.print_logo();
     println!("ROM Size: {}kb", cartridge.data.len() / 1024);
-    println!("{}", header);
+    // println!("{}", header);
 
     loop {
         cpu.step();

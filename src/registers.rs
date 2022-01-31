@@ -1,16 +1,5 @@
-pub enum DecRegisters {
-    A,
-    B,
-    C,
-    D,
-    E,
-    H,
-    L,
-    HL,
-}
-
 #[derive(Debug)]
-pub enum AnyRegN {
+pub enum StdRegN {
     A,
     B,
     C,
@@ -23,7 +12,7 @@ pub enum AnyRegN {
 }
 
 #[derive(Debug)]
-pub enum AnyReg {
+pub enum StdReg {
     A,
     B,
     C,
@@ -34,14 +23,38 @@ pub enum AnyReg {
     HL,
 }
 
-pub enum JumpCond {
+#[derive(Debug)]
+pub enum LoadRegnA {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    MemBC,
+    MemDE,
+    MemHL,
+    MemNN,
+}
+
+#[derive(Debug)]
+pub enum LoadRegnnn {
+    BC,
+    DE,
+    HL,
+    SP,
+}
+
+#[derive(Debug)]
+pub enum FlagCond {
     NZ,
     Z,
     NC,
     C,
 }
 
-impl JumpCond {
+impl FlagCond {
     /// Check if the flags for the jump conditial meets
     /// the specified parameters..
     /// NZ, Jump if Z flag is reset.
@@ -67,10 +80,10 @@ impl JumpCond {
     /// ```
     pub fn check(&self, flags: u8) -> bool {
         match self {
-            JumpCond::NZ => 0b00000000 == 0b00000001 & flags,
-            JumpCond::Z => 0b00000001 == 0b00000001 & flags,
-            JumpCond::NC => 0b00000000 == 0b00001000 & flags,
-            JumpCond::C => 0b00001000 == 0b00001000 & flags,
+            FlagCond::NZ => 0b00000000 == 0b00000001 & flags,
+            FlagCond::Z => 0b00000001 == 0b00000001 & flags,
+            FlagCond::NC => 0b00000000 == 0b00001000 & flags,
+            FlagCond::C => 0b00001000 == 0b00001000 & flags,
         }
     }
 }
@@ -111,11 +124,43 @@ impl Registers {
         self.l = bytes[1];
     }
 
+    pub fn get_bc(&self) -> u16 {
+        ((self.b as u16) << 8) | self.c as u16
+    }
+
+    pub fn set_bc(&mut self, val: u16) {
+        let bytes = val.to_be_bytes();
+        self.b = bytes[0];
+        self.c = bytes[1];
+    }
+
+    pub fn get_de(&self) -> u16 {
+        ((self.d as u16) << 8) | self.e as u16
+    }
+
+    pub fn set_de(&mut self, val: u16) {
+        let bytes = val.to_be_bytes();
+        self.d = bytes[0];
+        self.e = bytes[1];
+    }
+
+    pub fn get_nn(&self, low: u8, high: u8) -> u16 {
+        ((high as u16) << 8) | low as u16
+    }
+
     pub fn is_carry(&self) -> bool {
         if self.f & 0x08 == 0x08 {
             true
         } else {
             false
+        }
+    }
+
+    pub fn get_carry(&self) -> u8 {
+        if self.is_carry() {
+            0x01
+        } else {
+            0x00
         }
     }
 
@@ -164,17 +209,67 @@ fn clear_flag(flag: u8, pos: u8) -> u8 {
     flag | (1 << pos)
 }
 
+/// Returns true if the half carry bit will
+/// be set when adding v1 and v2.
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::will_half_carry;
+///
+/// let v1 = 0b00001000;
+/// let v2 = 0b00001000;
+/// assert_eq!(will_half_carry(v1, v2), true);
+///
+/// let v1 = 0b00000000;
+/// let v2 = 0b00000000;
+/// assert_eq!(will_half_carry(v1, v2), false);
+/// ```
+pub fn will_half_carry(v1: u8, v2: u8) -> bool {
+    if ((v1 & 0xf) + (v2 & 0xf)) & 0x10 == 0x10 {
+        true
+    } else {
+        false
+    }
+}
+
+/// Returns true if the carry bit will be set
+/// when adding v1 and v2.
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::will_carry;
+///
+/// let v1 = 0b00000001;
+/// let v2 = 0b00000001;
+/// assert_eq!(will_carry(v1, v2), true);
+///
+/// let v1 = 0b00000000;
+/// let v2 = 0b00000000;
+/// assert_eq!(will_carry(v1, v2), false);
+/// ```
+pub fn will_carry(v1: u8, v2: u8) -> bool {
+    if ((v1 & 0xfe) + (v2 & 0xfe)) & 0x02 == 0x02 {
+        true
+    } else {
+        false
+    }
+}
+
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
+    //BUG Does this half carry??
     if value == 0x00 {
+        (0xFF, false)
+    } else {
+        (value - amt, will_half_carry(value, amt))
+    }
+}
+
+pub fn inc(value: u8, amt: u8) -> (u8, bool) {
+    if value == 0xFF {
         (0x00, false)
     } else {
-        (
-            value - amt,
-            if ((value & 0xf) + (amt & 0xf)) & 0x10 == 0x10 {
-                true
-            } else {
-                false
-            },
-        )
+        (value + amt, will_half_carry(value, amt))
     }
 }
