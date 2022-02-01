@@ -114,6 +114,15 @@ impl Registers {
             l: 0x4D,
         }
     }
+    pub fn get_af(&self) -> u16 {
+        ((self.a as u16) << 8) | self.f as u16
+    }
+
+    pub fn set_af(&mut self, val: u16) {
+        let bytes = val.to_be_bytes();
+        self.a = bytes[0];
+        self.f = bytes[1];
+    }
 
     pub fn get_hl(&self) -> u16 {
         ((self.h as u16) << 8) | self.l as u16
@@ -147,6 +156,30 @@ impl Registers {
 
     pub fn get_nn(&self, low: u8, high: u8) -> u16 {
         ((high as u16) << 8) | low as u16
+    }
+
+    pub fn is_z(&self) -> bool {
+        if self.f & 0b0000_0001 == 0b0000_0001 {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_n(&self) -> bool {
+        if self.f & 0b0000_0010 == 0b0000_0010 {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_h(&self) -> bool {
+        if self.f & 0b0000_0100 == 0b0000_0100 {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn is_carry(&self) -> bool {
@@ -247,18 +280,26 @@ pub fn clear_flag(flag: u8, pos: u32) -> u8 {
 /// # Examples
 ///
 /// ```
-/// use rust_boy::registers::will_half_carry;
+/// use rust_boy::registers::add_will_half_carry;
 ///
 /// let v1 = 0b00001000;
 /// let v2 = 0b00001000;
-/// assert_eq!(will_half_carry(v1, v2), true);
+/// assert_eq!(add_will_half_carry(v1, v2), true);
 ///
 /// let v1 = 0b00000000;
 /// let v2 = 0b00000000;
-/// assert_eq!(will_half_carry(v1, v2), false);
+/// assert_eq!(add_will_half_carry(v1, v2), false);
 /// ```
-pub fn will_half_carry(v1: u8, v2: u8) -> bool {
+pub fn add_will_half_carry(v1: u8, v2: u8) -> bool {
     if ((v1 & 0xf) + (v2 & 0xf)) & 0x10 == 0x10 {
+        true
+    } else {
+        false
+    }
+}
+
+pub fn sub_will_half_carry(v1: u8, v2: u8) -> bool {
+    if (v1 & 0xf).wrapping_sub(v2 & 0xf) & 0x10 == 0x10 {
         true
     } else {
         false
@@ -290,13 +331,13 @@ pub fn will_carry(v1: u8, v2: u8) -> bool {
 }
 
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
-    (value.wrapping_sub(amt), will_half_carry(value, amt))
+    (value.wrapping_sub(amt), sub_will_half_carry(value, amt))
 }
 
 pub fn inc(value: u8, amt: u8) -> (u8, bool) {
     if value == 0xFF {
         (0x00, false)
     } else {
-        (value + amt, will_half_carry(value, amt))
+        (value + amt, add_will_half_carry(value, amt))
     }
 }

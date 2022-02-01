@@ -32,15 +32,14 @@ fn main() {
     gl_attr.set_multisample_samples(4);
 
     let window = video_subsystem
-        .window("RustBoy", 500, 500)
+        .window("RustBoy", 800, 600)
         .opengl()
         .resizable()
         .build()
         .unwrap();
 
-    // Create a window context
     let _ctx = window.gl_create_context().unwrap();
-    // Init egui stuff
+
     let shader_ver = ShaderVersion::Default;
     // On linux use GLES SL 100+, like so:
     // let shader_ver = ShaderVersion::Adaptive;
@@ -59,6 +58,8 @@ fn main() {
     let start_time = Instant::now();
     // GAME LOOP
     'running: loop {
+        let mut cpu_data = cpu.get_cpu_data();
+
         if enable_vsync {
             window
                 .subsystem()
@@ -75,61 +76,73 @@ fn main() {
         egui_ctx.begin_frame(egui_state.input.take());
 
         egui::CentralPanel::default().show(&egui_ctx, |ui| {
-            ui.label(" ");
-            ui.text_edit_multiline(&mut test_str);
-            ui.label(" ");
+            ui.horizontal(|ui| {
+                ui.label("AF: ");
+                ui.label(format!("{:#6X?}", cpu_data.af));
+            });
+            ui.horizontal(|ui| {
+                ui.label("BC: ");
+                ui.label(format!("{:#6X}", cpu_data.bc));
+            });
+            ui.horizontal(|ui| {
+                ui.label("DE: ");
+                ui.label(format!("{:#6X}", cpu_data.de));
+            });
+            ui.horizontal(|ui| {
+                ui.label("HL: ");
+                ui.label(format!("{:#6X}", cpu_data.hl));
+            });
+            ui.horizontal(|ui| {
+                ui.label("SP: ");
+                ui.label(format!("{:#6X}", cpu_data.sp));
+            });
+            ui.horizontal(|ui| {
+                ui.label("PC: ");
+                ui.label(format!("{:#6X}", cpu_data.pc));
+            });
+            ui.horizontal(|ui| {
+                ui.label("Z: ");
+                ui.add(Checkbox::new(&mut cpu_data.z, ""));
+                ui.label("N: ");
+                ui.add(Checkbox::new(&mut cpu_data.n, ""));
+                ui.label("H: ");
+                ui.add(Checkbox::new(&mut cpu_data.h, ""));
+                ui.label("C: ");
+                ui.add(Checkbox::new(&mut cpu_data.c, ""));
+            });
+
+            if ui.button("STEP").clicked() {
+                cpu.step();
+            }
+            ui.separator();
             ui.add(egui::Slider::new(&mut slider, 0.0..=50.0).text("Slider"));
-            ui.label(" ");
-            ui.add(Checkbox::new(&mut enable_vsync, "Reduce CPU Usage?"));
+            ui.add(Checkbox::new(&mut enable_vsync, "Enable vsync?"));
             ui.separator();
             if ui.button("Quit?").clicked() {
                 quit = true;
             }
         });
 
+        cpu.step();
         let (egui_output, paint_cmds) = egui_ctx.end_frame();
         // Process ouput
         egui_state.process_output(&window, &egui_output);
-
-        // For default dpi scaling only, Update window when the size of resized window is very small (to avoid egui::CentralPanel distortions).
-        // if egui_ctx.used_size() != painter.screen_rect.size() {
-        //     println!("resized.");
-        //     let _size = egui_ctx.used_size();
-        //     let (w, h) = (_size.x as u32, _size.y as u32);
-        //     window.set_size(w, h).unwrap();
-        // }
-
         let paint_jobs = egui_ctx.tessellate(paint_cmds);
 
-        // An example of how OpenGL can be used to draw custom stuff with egui
-        // overlaying it:
-        // First clear the background to something nice.
         unsafe {
             // Clear the screen to green
             gl::ClearColor(0.3, 0.6, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
-        if !egui_output.needs_repaint {
-            if let Some(event) = event_pump.wait_event_timeout(5) {
-                match event {
-                    Event::Quit { .. } => break 'running,
-                    _ => {
-                        // Process input event
-                        egui_state.process_input(&window, event, &mut painter);
-                    }
-                }
-            }
-        } else {
-            painter.paint_jobs(None, paint_jobs, &egui_ctx.font_image());
-            window.gl_swap_window();
-            for event in event_pump.poll_iter() {
-                match event {
-                    Event::Quit { .. } => break 'running,
-                    _ => {
-                        // Process input event
-                        egui_state.process_input(&window, event, &mut painter);
-                    }
+        painter.paint_jobs(None, paint_jobs, &egui_ctx.font_image());
+        window.gl_swap_window();
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. } => break 'running,
+                _ => {
+                    // Process input event
+                    egui_state.process_input(&window, event, &mut painter);
                 }
             }
         }

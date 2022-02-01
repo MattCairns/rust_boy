@@ -1,6 +1,19 @@
 use crate::memorymap::MemoryMap;
 use crate::registers::*;
 
+pub struct CpuData {
+    pub af: u16,
+    pub bc: u16,
+    pub de: u16,
+    pub hl: u16,
+    pub pc: u16,
+    pub sp: u16,
+    pub z: bool,
+    pub n: bool,
+    pub h: bool,
+    pub c: bool,
+}
+
 pub struct Cpu<'m> {
     reg: Registers,
     sp: u16,
@@ -15,6 +28,21 @@ impl<'m> Cpu<'m> {
             sp: 0xFFFF,
             pc: 0x0100,
             mem,
+        }
+    }
+
+    pub fn get_cpu_data(&self) -> CpuData {
+        CpuData {
+            af: self.reg.get_af(),
+            bc: self.reg.get_bc(),
+            de: self.reg.get_de(),
+            hl: self.reg.get_hl(),
+            pc: self.pc,
+            sp: self.sp,
+            z: self.reg.is_z(),
+            n: self.reg.is_n(),
+            h: self.reg.is_h(),
+            c: self.reg.is_carry(),
         }
     }
 
@@ -200,7 +228,7 @@ impl<'m> Cpu<'m> {
 
         match reg {
             StdRegN::A => {
-                if will_half_carry(self.reg.a, self.reg.a) {
+                if add_will_half_carry(self.reg.a, self.reg.a) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.a) {
@@ -209,7 +237,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.a + carry;
             }
             StdRegN::B => {
-                if will_half_carry(self.reg.a, self.reg.b) {
+                if add_will_half_carry(self.reg.a, self.reg.b) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.b) {
@@ -218,7 +246,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.b + carry;
             }
             StdRegN::C => {
-                if will_half_carry(self.reg.a, self.reg.c) {
+                if add_will_half_carry(self.reg.a, self.reg.c) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.c) {
@@ -227,7 +255,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.c + carry;
             }
             StdRegN::D => {
-                if will_half_carry(self.reg.a, self.reg.d) {
+                if add_will_half_carry(self.reg.a, self.reg.d) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.d) {
@@ -236,7 +264,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.d + carry;
             }
             StdRegN::E => {
-                if will_half_carry(self.reg.a, self.reg.e) {
+                if add_will_half_carry(self.reg.a, self.reg.e) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.e) {
@@ -245,7 +273,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.e + carry;
             }
             StdRegN::H => {
-                if will_half_carry(self.reg.a, self.reg.h) {
+                if add_will_half_carry(self.reg.a, self.reg.h) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.h) {
@@ -254,7 +282,7 @@ impl<'m> Cpu<'m> {
                 self.reg.a += self.reg.h + carry;
             }
             StdRegN::L => {
-                if will_half_carry(self.reg.a, self.reg.l) {
+                if add_will_half_carry(self.reg.a, self.reg.l) {
                     self.reg.set_half_carry_flag();
                 };
                 if will_carry(self.reg.a, self.reg.l) {
