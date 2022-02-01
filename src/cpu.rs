@@ -23,6 +23,8 @@ impl<'m> Cpu<'m> {
         println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
             0x00 => self.nop(),
+            0x0F => self.rrca(),
+            0xC9 => self.ret(),
             0x3D => self.dec_reg(StdReg::A),
             0x05 => self.dec_reg(StdReg::B),
             0x0D => self.dec_reg(StdReg::C),
@@ -42,24 +44,37 @@ impl<'m> Cpu<'m> {
             0x11 => self.ld_n_nn(LoadRegnnn::DE),
             0x21 => self.ld_n_nn(LoadRegnnn::HL),
             0x31 => self.ld_n_nn(LoadRegnnn::SP),
-            0x7F => self.ld_n_a(LoadRegnA::A),
-            0x47 => self.ld_n_a(LoadRegnA::B),
-            0x4F => self.ld_n_a(LoadRegnA::C),
-            0x57 => self.ld_n_a(LoadRegnA::D),
-            0x5F => self.ld_n_a(LoadRegnA::E),
-            0x67 => self.ld_n_a(LoadRegnA::H),
-            0x6F => self.ld_n_a(LoadRegnA::L),
-            0x02 => self.ld_n_a(LoadRegnA::MemBC),
-            0x12 => self.ld_n_a(LoadRegnA::MemDE),
-            0x77 => self.ld_n_a(LoadRegnA::MemHL),
-            0xEA => self.ld_n_a(LoadRegnA::MemNN),
-            0x78 => self.ld_r_r(StdReg::A, StdReg::B),
+            0x7F => self.ld_a_n(LoadReg::A),
+            0x78 => self.ld_a_n(LoadReg::B),
+            0x79 => self.ld_a_n(LoadReg::C),
+            0x7A => self.ld_a_n(LoadReg::D),
+            0x7B => self.ld_a_n(LoadReg::E),
+            0x7C => self.ld_a_n(LoadReg::H),
+            0x7D => self.ld_a_n(LoadReg::L),
+            0x0A => self.ld_a_n(LoadReg::MemBC),
+            0x1A => self.ld_a_n(LoadReg::MemDE),
+            0x7E => self.ld_a_n(LoadReg::MemHL),
+            0xFA => self.ld_a_n(LoadReg::MemNN),
+            0x3E => self.ld_a_n(LoadReg::N),
+            0x47 => self.ld_n_a(LoadReg::B),
+            0x4F => self.ld_n_a(LoadReg::C),
+            0x57 => self.ld_n_a(LoadReg::D),
+            0x5F => self.ld_n_a(LoadReg::E),
+            0x67 => self.ld_n_a(LoadReg::H),
+            0x6F => self.ld_n_a(LoadReg::L),
+            0x02 => self.ld_n_a(LoadReg::MemBC),
+            0x12 => self.ld_n_a(LoadReg::MemDE),
+            0x77 => self.ld_n_a(LoadReg::MemHL),
+            0xEA => self.ld_n_a(LoadReg::MemNN),
+            0xE0 => self.ld_ff00_a(),
+            0xF0 => self.ld_a_ff00(),
+            /* 0x78 => self.ld_r_r(StdReg::A, StdReg::B),
             0x79 => self.ld_r_r(StdReg::A, StdReg::C),
             0x7A => self.ld_r_r(StdReg::A, StdReg::D),
             0x7B => self.ld_r_r(StdReg::A, StdReg::E),
             0x7C => self.ld_r_r(StdReg::A, StdReg::H),
             0x7D => self.ld_r_r(StdReg::A, StdReg::L),
-            0x7E => self.ld_r_r(StdReg::A, StdReg::HL),
+            0x7E => self.ld_r_r(StdReg::A, StdReg::HL), */
             0x40 => self.ld_r_r(StdReg::B, StdReg::B),
             0x41 => self.ld_r_r(StdReg::B, StdReg::C),
             0x42 => self.ld_r_r(StdReg::B, StdReg::D),
@@ -141,7 +156,13 @@ impl<'m> Cpu<'m> {
             // 0x1B => self.rr_n(AnyReg::E),
             // 0x1C => self.rr_n(AnyReg::H),
             // 0x1D => self.rr_n(AnyReg::L),
+            0xF3 => {
+                println!("(0F3) DI => Not implemented");
+                self.pc = self.pc.wrapping_add(1);
+                0
+            }
             0x1E => self.rr_n(StdReg::HL),
+            0xFE => self.cp_a_n(),
             _ => {
                 println!("Opcode not implmented : {:#04X}", opcode);
                 println!(
@@ -154,13 +175,26 @@ impl<'m> Cpu<'m> {
     }
 
     fn nop(&mut self) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
+        4
+    }
+
+    fn rrca(&mut self) -> u8 {
+        let carry = self.reg.a & 0b0000_0001;
+        self.reg.a = self.reg.a.rotate_right(1);
+        self.reg.unset_all_flags();
+        if carry == 0b0000_0001 {
+            self.reg.set_carry_flag();
+        } else {
+            self.reg.unset_carry_flag();
+        }
+        self.pc = self.pc.wrapping_add(1);
         4
     }
 
     fn adc_a_n(&mut self, reg: StdRegN) -> u8 {
         let cycles = 4;
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         let carry = self.reg.get_carry();
 
@@ -286,13 +320,14 @@ impl<'m> Cpu<'m> {
 
         self.reg.unset_sub_flag();
 
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         cycles
     }
 
     fn dec_reg(&mut self, reg: StdReg) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
+        println!("DEC {:?}", reg);
         let val: (u8, bool) = match reg {
             StdReg::A => {
                 let dec = dec(self.reg.a, 0x01);
@@ -334,6 +369,8 @@ impl<'m> Cpu<'m> {
 
         if val.0 == 0x00 {
             self.reg.set_zero_flag();
+        } else {
+            self.reg.unset_zero_flag();
         }
 
         if val.1 {
@@ -354,34 +391,53 @@ impl<'m> Cpu<'m> {
         if cond.check(self.reg.f) {
             self.pc = self.pop();
         } else {
-            self.pc += 1;
+            self.pc = self.pc.wrapping_add(1);
         }
 
         cycles
     }
 
-    // BUG Need to convert to signed byte
+    // BUG Jumps to the wrong location sometimes??
     fn jp_cond(&mut self, cond: FlagCond) -> u8 {
         let mut cycles = 8;
         if cond.check(self.reg.f) {
             cycles = 12;
-            let v = self.mem.read_byte(self.pc + 0x01).unwrap() as i16;
-            println!("{:#2X?}", v);
-            self.pc += v;
+            self.pc = self.pc.wrapping_add(1);
+            let v = self.mem.read_byte(self.pc).unwrap();
+            self.pc = self.pc.wrapping_add(1);
+
+            let sig: u16;
+            let is_neg: bool;
+
+            // TODO Make this into a fn
+            if (v & 0b1000_0000) == 0b1000_0000 {
+                is_neg = true;
+                sig = !v as u16 + 1;
+            } else {
+                is_neg = false;
+                sig = v as u16;
+            }
+
+            if is_neg {
+                self.pc -= sig;
+            } else {
+                self.pc += sig;
+            }
             println!("JR {:?} {:#6X?}", cond, self.pc);
         } else {
-            self.pc += 1;
+            self.pc = self.pc.wrapping_add(1);
+            self.pc = self.pc.wrapping_add(1);
         }
 
         cycles
     }
 
     fn jp_nn(&mut self) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let lo = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let hi = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let jp_loc = ((hi as u16) << 8) | lo as u16;
         println!("jp {:X?}", jp_loc);
         self.pc = jp_loc;
@@ -392,8 +448,44 @@ impl<'m> Cpu<'m> {
         self.reg.a = self.reg.a ^ self.reg.a;
         self.reg.unset_all_flags();
         self.reg.set_zero_flag();
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
+        println!("XOR A",);
         4
+    }
+
+    fn ld_ff00_a(&mut self) -> u8 {
+        //Must be between $FF00 and $FFFF
+        let cycles = 12;
+
+        let b = 0xFF00 + self.read_u8() as u16;
+
+        println!("LD {:#6X} A", b);
+
+        if b >= 0xFF00 && b < 0xFFFF {
+            self.mem.write_byte(b, self.reg.a).unwrap();
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn ld_a_ff00(&mut self) -> u8 {
+        //Must be between $FF00 and $FFFF
+        let cycles = 12;
+
+        let b = 0xFF00 + self.read_u8() as u16;
+
+        println!("LD A {:#6X}", b);
+
+        if b >= 0xFF00 && b < 0xFFFF {
+            self.reg.a = self.mem.read_byte(b).unwrap();
+            println!("{:#4X}", self.mem.read_byte(b).unwrap());
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles
     }
 
     fn ld_r_r(&mut self, r1: StdReg, r2: StdReg) -> u8 {
@@ -502,7 +594,7 @@ impl<'m> Cpu<'m> {
                     StdReg::H => self.mem.write_byte(self.reg.get_hl(), self.reg.h).unwrap(),
                     StdReg::L => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
                     StdReg::HL => {
-                        self.pc += 1;
+                        self.pc = self.pc.wrapping_add(1);
                         self.mem
                             .write_byte(self.reg.get_hl(), self.mem.read_byte(self.pc).unwrap())
                             .unwrap();
@@ -511,7 +603,7 @@ impl<'m> Cpu<'m> {
                 };
             }
         };
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         cycles
     }
 
@@ -520,57 +612,102 @@ impl<'m> Cpu<'m> {
         let mut hl = self.reg.get_hl();
 
         self.reg.a = self.mem.read_byte(hl).unwrap();
-        hl += 1;
+        hl = hl.wrapping_add(1);
         self.reg.set_hl(hl);
 
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         8
     }
 
     fn ld_mem_hl_a(&mut self) -> u8 {
+        println!("LD [HL-] A");
+        println!("{:#6X?}", self.reg.get_hl());
         self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
-        self.pc += 1;
+        self.reg.set_hl(self.reg.get_hl().overflowing_sub(1).0);
+        self.pc = self.pc.wrapping_add(1);
 
         8
     }
 
-    fn ld_n_a(&mut self, reg: LoadRegnA) -> u8 {
+    fn ld_a_n(&mut self, reg: LoadReg) -> u8 {
+        let mut cycles = 4;
+        println!("LD A {:?}", reg);
+
+        match reg {
+            LoadReg::A => self.reg.a = self.reg.a,
+            LoadReg::B => self.reg.a = self.reg.b,
+            LoadReg::C => self.reg.a = self.reg.c,
+            LoadReg::D => self.reg.a = self.reg.d,
+            LoadReg::E => self.reg.a = self.reg.e,
+            LoadReg::H => self.reg.a = self.reg.h,
+            LoadReg::L => self.reg.a = self.reg.l,
+            LoadReg::MemBC => {
+                cycles = 8;
+                self.reg.a = self.mem.read_byte(self.reg.get_bc()).unwrap();
+            }
+            LoadReg::MemDE => {
+                cycles = 8;
+                self.reg.a = self.mem.read_byte(self.reg.get_de()).unwrap();
+            }
+            LoadReg::MemHL => {
+                cycles = 8;
+                self.reg.a = self.mem.read_byte(self.reg.get_hl()).unwrap();
+            }
+            LoadReg::MemNN => {
+                cycles = 16;
+                let loc = self.read_u16();
+                self.reg.a = self.mem.read_byte(loc).unwrap();
+            }
+            LoadReg::N => {
+                cycles = 8;
+                self.reg.a = self.read_u8();
+                println!("{:#4X}", self.reg.a);
+            }
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn ld_n_a(&mut self, reg: LoadReg) -> u8 {
         let mut cycles = 4;
         println!("LD {:?} A", reg);
         match reg {
-            LoadRegnA::A => self.reg.a = self.reg.a,
-            LoadRegnA::B => self.reg.b = self.reg.a,
-            LoadRegnA::C => self.reg.c = self.reg.a,
-            LoadRegnA::D => self.reg.d = self.reg.a,
-            LoadRegnA::E => self.reg.e = self.reg.a,
-            LoadRegnA::H => self.reg.h = self.reg.a,
-            LoadRegnA::L => self.reg.l = self.reg.a,
-            LoadRegnA::MemBC => {
+            LoadReg::A => self.reg.a = self.reg.a,
+            LoadReg::B => self.reg.b = self.reg.a,
+            LoadReg::C => self.reg.c = self.reg.a,
+            LoadReg::D => self.reg.d = self.reg.a,
+            LoadReg::E => self.reg.e = self.reg.a,
+            LoadReg::H => self.reg.h = self.reg.a,
+            LoadReg::L => self.reg.l = self.reg.a,
+            LoadReg::MemBC => {
                 cycles = 8;
                 self.mem.write_byte(self.reg.get_bc(), self.reg.a).unwrap();
             }
-            LoadRegnA::MemDE => {
+            LoadReg::MemDE => {
                 cycles = 8;
                 self.mem.write_byte(self.reg.get_de(), self.reg.a).unwrap();
             }
-            LoadRegnA::MemHL => {
+            LoadReg::MemHL => {
                 cycles = 8;
                 self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
             }
-            LoadRegnA::MemNN => {
+            LoadReg::MemNN => {
                 cycles = 16;
-                self.pc += 1;
+                self.pc = self.pc.wrapping_add(1);
                 let low = self.mem.read_byte(self.pc).unwrap();
-                self.pc += 1;
+                self.pc = self.pc.wrapping_add(1);
                 let high = self.mem.read_byte(self.pc).unwrap();
                 self.mem
                     .write_byte(self.reg.get_nn(low, high), self.reg.a)
                     .unwrap();
             }
+            LoadReg::N => (),
         };
 
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         cycles
     }
@@ -587,7 +724,8 @@ impl<'m> Cpu<'m> {
             LoadRegnnn::HL => self.reg.set_hl(nn),
             LoadRegnnn::SP => self.sp = nn,
         }
-        self.pc += 1;
+
+        self.pc = self.pc.wrapping_add(1);
         cycles
     }
 
@@ -596,14 +734,15 @@ impl<'m> Cpu<'m> {
 
         println!("LD C {:#4X?}", self.reg.c);
 
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         8
     }
 
     fn ld_b_n(&mut self) -> u8 {
         self.reg.b = self.read_u8();
-        self.pc += 1;
+        println!("LD B {:#6X?}", self.reg.b);
+        self.pc = self.pc.wrapping_add(1);
 
         8
     }
@@ -708,7 +847,7 @@ impl<'m> Cpu<'m> {
             self.reg.unset_carry_flag();
         }
 
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
 
         cycles // HL = 16
     }
@@ -719,10 +858,12 @@ impl<'m> Cpu<'m> {
         self.mem.write_byte(self.sp, bytes[0]).unwrap();
         self.sp -= 1;
         self.mem.write_byte(self.sp, bytes[1]).unwrap();
+
+        println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
     }
 
     fn pop(&mut self) -> u16 {
-        println!("sp = {:#6X?}", self.sp);
+        println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
         let lo = self.mem.read_byte(self.sp).unwrap();
         self.sp += 1;
         let hi = self.mem.read_byte(self.sp).unwrap();
@@ -731,15 +872,45 @@ impl<'m> Cpu<'m> {
     }
 
     fn read_u8(&mut self) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         self.mem.read_byte(self.pc).unwrap()
     }
 
     fn read_u16(&mut self) -> u16 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let low = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let high = self.mem.read_byte(self.pc).unwrap();
         self.reg.get_nn(low, high)
+    }
+
+    fn cp_a_n(&mut self) -> u8 {
+        let cycles = 4;
+
+        let n = self.read_u8();
+        println!("{} - {}", self.reg.a, n);
+        if (self.reg.a & 0xf).wrapping_sub(n & 0xf) & 0x10 == 0x10 {
+            self.reg.set_half_carry_flag();
+        }
+
+        if self.reg.a.wrapping_sub(n) == 0 {
+            self.reg.set_zero_flag();
+        }
+
+        if n > self.reg.a {
+            self.reg.set_carry_flag();
+        }
+
+        self.reg.set_sub_flag();
+
+        self.pc += self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn ret(&mut self) -> u8 {
+        let cycles = 16;
+        self.pc = self.pop();
+        cycles
     }
 }

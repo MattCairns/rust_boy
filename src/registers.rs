@@ -24,7 +24,7 @@ pub enum StdReg {
 }
 
 #[derive(Debug)]
-pub enum LoadRegnA {
+pub enum LoadReg {
     A,
     B,
     C,
@@ -36,6 +36,7 @@ pub enum LoadRegnA {
     MemDE,
     MemHL,
     MemNN,
+    N,
 }
 
 #[derive(Debug)]
@@ -166,6 +167,7 @@ impl Registers {
 
     pub fn set_zero_flag(&mut self) {
         self.f = set_flag(self.f, 7);
+        println!("{:#4X}", self.f);
     }
 
     pub fn unset_zero_flag(&mut self) {
@@ -201,12 +203,42 @@ impl Registers {
     }
 }
 
-fn set_flag(flag: u8, pos: u8) -> u8 {
-    flag & !(1 << pos)
+/// Return the new value of the flag
+/// with the bit at pos set
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::set_flag;
+///
+/// let flag = 0b00000000;
+/// let pos = 7;
+/// assert_eq!(set_flag(flag, pos), 0b00000001);
+/// let pos = 6;
+/// assert_eq!(set_flag(flag, pos), 0b00000010);
+/// let pos = 5;
+/// assert_eq!(set_flag(flag, pos), 0b00000100);
+/// let pos = 4;
+/// assert_eq!(set_flag(flag, pos), 0b00001000);
+/// ```
+pub fn set_flag(flag: u8, pos: u32) -> u8 {
+    let byte: u8 = 0b1000_0000;
+    flag | byte.rotate_right(pos)
 }
 
-fn clear_flag(flag: u8, pos: u8) -> u8 {
-    flag | (1 << pos)
+/// .
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::clear_flag;
+/// let flag = 0b00000001;
+/// let pos = 7;
+/// assert_eq!(clear_flag(flag, pos), 0b00000000);
+/// ```
+pub fn clear_flag(flag: u8, pos: u32) -> u8 {
+    let byte: u8 = 0b1000_0000;
+    flag & !byte.rotate_right(pos)
 }
 
 /// Returns true if the half carry bit will
@@ -258,12 +290,7 @@ pub fn will_carry(v1: u8, v2: u8) -> bool {
 }
 
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
-    //BUG Does this half carry??
-    if value == 0x00 {
-        (0xFF, false)
-    } else {
-        (value - amt, will_half_carry(value, amt))
-    }
+    (value.wrapping_sub(amt), will_half_carry(value, amt))
 }
 
 pub fn inc(value: u8, amt: u8) -> (u8, bool) {

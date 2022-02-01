@@ -15,8 +15,13 @@ impl Default for MemoryMap {
 
 impl MemoryMap {
     pub fn load_cartridge(&mut self, cartridge: &Cartridge) {
-        (0..cartridge.data.len()).for_each(|pos| {
-            self.memory[pos] = cartridge.data[pos];
+        println!("Cartridge size: {}", cartridge.data.len());
+        (0..self.memory.len()).for_each(|pos| {
+            if pos >= cartridge.data.len() {
+                self.memory[pos] = 0x00;
+            } else {
+                self.memory[pos] = cartridge.data[pos];
+            };
         });
     }
 
