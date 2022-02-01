@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sdl2 = "0.35.1"
+sdl2 = "0.35"
+egui_sdl2_gl = "0.16.0"
