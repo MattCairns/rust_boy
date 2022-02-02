@@ -65,18 +65,18 @@ impl FlagCond {
     ///
     /// # Examples
     /// ```
-    /// use rust_boy::registers::JumpCond;
+    /// use rust_boy::registers::FlagCond;
     /// let flags : u8 = 0b00001111;
-    /// let cond = JumpCond::NZ;
+    /// let cond = FlagCond::NZ;
     /// assert_eq!(cond.check(flags), false);
     ///
-    /// let cond = JumpCond::Z;
+    /// let cond = FlagCond::Z;
     /// assert_eq!(cond.check(flags), true);
     ///
-    /// let cond = JumpCond::NC;
+    /// let cond = FlagCond::NC;
     /// assert_eq!(cond.check(flags), false);
     ///
-    /// let cond = JumpCond::C;
+    /// let cond = FlagCond::C;
     /// assert_eq!(cond.check(flags), true);
     /// ```
     pub fn check(&self, flags: u8) -> bool {
@@ -291,15 +291,31 @@ pub fn clear_flag(flag: u8, pos: u32) -> u8 {
 /// assert_eq!(add_will_half_carry(v1, v2), false);
 /// ```
 pub fn add_will_half_carry(v1: u8, v2: u8) -> bool {
-    if ((v1 & 0xf) + (v2 & 0xf)) & 0x10 == 0x10 {
+    if (v1 & 0xf).wrapping_add(v2 & 0xf) & 0x10 == 0x10 {
         true
     } else {
         false
     }
 }
 
+/// Returns true if the half carry bit will
+/// be set when subtracting v1 and v2.
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::sub_will_half_carry;
+///
+/// let v1 = 0b00001000;
+/// let v2 = 0b00001000;
+/// assert_eq!(sub_will_half_carry(v1, v2), true);
+///
+/// let v1 = 0b00000000;
+/// let v2 = 0b00000000;
+/// assert_eq!(sub_will_half_carry(v1, v2), false);
+/// ```
 pub fn sub_will_half_carry(v1: u8, v2: u8) -> bool {
-    if (v1 & 0xf).wrapping_sub(v2 & 0xf) & 0x10 == 0x10 {
+    if (v1 & 0x8).wrapping_sub(v2 & 0x8) & 0x10 == 0x10 {
         true
     } else {
         false
@@ -323,7 +339,7 @@ pub fn sub_will_half_carry(v1: u8, v2: u8) -> bool {
 /// assert_eq!(will_carry(v1, v2), false);
 /// ```
 pub fn will_carry(v1: u8, v2: u8) -> bool {
-    if ((v1 & 0xfe) + (v2 & 0xfe)) & 0x02 == 0x02 {
+    if ((v1 & 0x01) + (v2 & 0x01)) & 0x02 == 0x02 {
         true
     } else {
         false

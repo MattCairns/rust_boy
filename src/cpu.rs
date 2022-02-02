@@ -25,7 +25,7 @@ impl<'m> Cpu<'m> {
     pub fn load(mem: &'m mut MemoryMap) -> Self {
         Self {
             reg: Registers::dmg0(),
-            sp: 0xFFFF,
+            sp: 0xFFFE,
             pc: 0x0100,
             mem,
         }
@@ -306,32 +306,33 @@ impl<'m> Cpu<'m> {
                 inc
             }
             StdReg::B => {
-                let inc = inc(self.reg.a, 0x01);
+                let inc = inc(self.reg.b, 0x01);
                 self.reg.b = inc.0;
                 inc
             }
             StdReg::C => {
-                let inc = inc(self.reg.a, 0x01);
+                let inc = inc(self.reg.c, 0x01);
                 self.reg.c = inc.0;
                 inc
             }
             StdReg::D => {
-                let inc = inc(self.reg.a, 0x01);
+                println!("DEC D {:#4X}", self.reg.d);
+                let inc = inc(self.reg.d, 0x01);
                 self.reg.d = inc.0;
                 inc
             }
             StdReg::E => {
-                let inc = inc(self.reg.a, 0x01);
+                let inc = inc(self.reg.e, 0x01);
                 self.reg.e = inc.0;
                 inc
             }
             StdReg::H => {
-                let inc = inc(self.reg.a, 0x01);
+                let inc = inc(self.reg.h, 0x01);
                 self.reg.h = inc.0;
                 inc
             }
             StdReg::L => {
-                let inc = inc(self.reg.a, 0x01);
+                let inc = inc(self.reg.l, 0x01);
                 self.reg.l = inc.0;
                 inc
             }
@@ -776,13 +777,21 @@ impl<'m> Cpu<'m> {
     }
 
     fn rst_18(&mut self) -> u8 {
-        self.push();
+        self.pc += 1;
+        let lo = self.mem.read_byte(self.pc).unwrap();
+        self.pc += 1;
+        let hi = self.mem.read_byte(self.pc).unwrap();
+        self.push(lo, hi);
         self.pc = 0x0018;
         32
     }
 
     fn rst_38(&mut self) -> u8 {
-        self.push();
+        self.pc += 1;
+        let lo = self.mem.read_byte(self.pc).unwrap();
+        self.pc += 1;
+        let hi = self.mem.read_byte(self.pc).unwrap();
+        self.push(lo, hi);
         self.pc = 0x0038;
         32
     }
@@ -880,22 +889,22 @@ impl<'m> Cpu<'m> {
         cycles // HL = 16
     }
 
-    fn push(&mut self) {
-        let bytes = self.pc.to_be_bytes();
+    fn push(&mut self, lo: u8, hi: u8) {
         self.sp -= 1;
-        self.mem.write_byte(self.sp, bytes[0]).unwrap();
+        self.mem.write_byte(self.sp, lo).unwrap();
         self.sp -= 1;
-        self.mem.write_byte(self.sp, bytes[1]).unwrap();
+        self.mem.write_byte(self.sp, hi).unwrap();
 
         println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
     }
 
     fn pop(&mut self) -> u16 {
         println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
-        let lo = self.mem.read_byte(self.sp).unwrap();
-        self.sp += 1;
         let hi = self.mem.read_byte(self.sp).unwrap();
         self.sp += 1;
+        let lo = self.mem.read_byte(self.sp).unwrap();
+        self.sp += 1;
+
         ((hi as u16) << 8) | lo as u16
     }
 
@@ -940,5 +949,43 @@ impl<'m> Cpu<'m> {
         let cycles = 16;
         self.pc = self.pop();
         cycles
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pop_from_stack() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let lo = 0xFF;
+        let hi = 0xDD;
+
+        let val = ((hi as u16) << 8) | lo as u16;
+
+        cpu.push(lo, hi);
+        let pop = cpu.pop();
+
+        assert_eq!(pop, val);
+    }
+
+    #[test]
+    fn push_to_stack() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let pc1 = cpu.mem.read_byte(cpu.pc).unwrap();
+        let pc2 = cpu.mem.read_byte(cpu.pc + 1).unwrap();
+
+        cpu.push(pc1, pc2);
+
+        let sp1 = cpu.mem.read_byte(cpu.sp - 1).unwrap();
+        let sp2 = cpu.mem.read_byte(cpu.sp - 2).unwrap();
+
+        assert_eq!(pc1, sp1);
+        assert_eq!(pc2, sp2);
     }
 }
