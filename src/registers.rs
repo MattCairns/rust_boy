@@ -81,10 +81,10 @@ impl FlagCond {
     /// ```
     pub fn check(&self, flags: u8) -> bool {
         match self {
-            FlagCond::NZ => 0b00000000 == 0b00000001 & flags,
-            FlagCond::Z => 0b00000001 == 0b00000001 & flags,
-            FlagCond::NC => 0b00000000 == 0b00001000 & flags,
-            FlagCond::C => 0b00001000 == 0b00001000 & flags,
+            FlagCond::NZ => 0b00000000 == 0b10000000 & flags,
+            FlagCond::Z => 0b10000000 == 0b10000000 & flags,
+            FlagCond::NC => 0b00000000 == 0b00010000 & flags,
+            FlagCond::C => 0b00010000 == 0b00010000 & flags,
         }
     }
 }
@@ -198,41 +198,40 @@ impl Registers {
         }
     }
 
-    pub fn set_zero_flag(&mut self) {
-        self.f = set_flag(self.f, 7);
-        println!("{:#4X}", self.f);
+    pub fn set_z(&mut self) {
+        self.f = set_flag(self.f, 0);
     }
 
-    pub fn unset_zero_flag(&mut self) {
-        self.f = clear_flag(self.f, 7);
+    pub fn unset_z(&mut self) {
+        self.f = clear_flag(self.f, 0);
     }
 
-    pub fn set_sub_flag(&mut self) {
-        self.f = set_flag(self.f, 6);
+    pub fn set_n(&mut self) {
+        self.f = set_flag(self.f, 1);
     }
 
-    pub fn unset_sub_flag(&mut self) {
-        self.f = clear_flag(self.f, 6);
+    pub fn unset_n(&mut self) {
+        self.f = clear_flag(self.f, 1);
     }
 
-    pub fn set_half_carry_flag(&mut self) {
-        self.f = set_flag(self.f, 5);
+    pub fn set_h(&mut self) {
+        self.f = set_flag(self.f, 2);
     }
 
-    pub fn unset_half_carry_flag(&mut self) {
-        self.f = clear_flag(self.f, 5);
+    pub fn unset_h(&mut self) {
+        self.f = clear_flag(self.f, 2);
     }
 
-    pub fn set_carry_flag(&mut self) {
-        self.f = set_flag(self.f, 4);
+    pub fn set_c(&mut self) {
+        self.f = set_flag(self.f, 3);
     }
 
-    pub fn unset_carry_flag(&mut self) {
-        self.f = clear_flag(self.f, 4);
+    pub fn unset_c(&mut self) {
+        self.f = clear_flag(self.f, 3);
     }
 
     pub fn unset_all_flags(&mut self) {
-        self.f = 0x0000;
+        self.f = 0x00;
     }
 }
 

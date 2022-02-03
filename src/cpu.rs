@@ -23,6 +23,39 @@ pub struct Cpu<'m> {
 
 impl<'m> Cpu<'m> {
     pub fn load(mem: &'m mut MemoryMap) -> Self {
+        // Load the state of the gameboy after
+        // loading the boot rom.
+        mem.write_byte(0xFF05, 0x00).unwrap();
+        mem.write_byte(0xFF06, 0x00).unwrap();
+        mem.write_byte(0xFF07, 0x00).unwrap();
+        mem.write_byte(0xFF10, 0x80).unwrap();
+        mem.write_byte(0xFF11, 0xBF).unwrap();
+        mem.write_byte(0xFF12, 0xF3).unwrap();
+        mem.write_byte(0xFF14, 0xBF).unwrap();
+        mem.write_byte(0xFF16, 0x3F).unwrap();
+        mem.write_byte(0xFF17, 0x00).unwrap();
+        mem.write_byte(0xFF19, 0xBF).unwrap();
+        mem.write_byte(0xFF1A, 0x7F).unwrap();
+        mem.write_byte(0xFF1B, 0xFF).unwrap();
+        mem.write_byte(0xFF1C, 0x9F).unwrap();
+        mem.write_byte(0xFF1E, 0xBF).unwrap();
+        mem.write_byte(0xFF20, 0xFF).unwrap();
+        mem.write_byte(0xFF21, 0x00).unwrap();
+        mem.write_byte(0xFF22, 0x00).unwrap();
+        mem.write_byte(0xFF23, 0xBF).unwrap();
+        mem.write_byte(0xFF24, 0x77).unwrap();
+        mem.write_byte(0xFF25, 0xF3).unwrap();
+        mem.write_byte(0xFF26, 0xF1).unwrap();
+        mem.write_byte(0xFF40, 0x91).unwrap();
+        mem.write_byte(0xFF42, 0x00).unwrap();
+        mem.write_byte(0xFF43, 0x00).unwrap();
+        mem.write_byte(0xFF45, 0x00).unwrap();
+        mem.write_byte(0xFF47, 0xFC).unwrap();
+        mem.write_byte(0xFF48, 0xFF).unwrap();
+        mem.write_byte(0xFF49, 0xFF).unwrap();
+        mem.write_byte(0xFF4A, 0x00).unwrap();
+        mem.write_byte(0xFF4B, 0x00).unwrap();
+        mem.write_byte(0xFFFF, 0x00).unwrap();
         Self {
             reg: Registers::dmg0(),
             sp: 0xFFFE,
@@ -47,12 +80,23 @@ impl<'m> Cpu<'m> {
     }
 
     pub fn step(&mut self) -> u8 {
+        /* let start = 0x8000;
+        for i in (0..384) {
+            let start = start + i * 16;
+            self.mem.print_tile(start);
+        } */
         let opcode = self.mem.read_byte(self.pc).unwrap();
         println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
             0x00 => self.nop(),
             0x0F => self.rrca(),
             0xC9 => self.ret(),
+            0xCD => self.call(),
+            0xC4 => self.call_cc(FlagCond::NZ),
+            0xCC => self.call_cc(FlagCond::Z),
+            0xD4 => self.call_cc(FlagCond::NC),
+            0xDC => self.call_cc(FlagCond::C),
+            0xE5 => self.push_hl(),
             0x3D => self.dec_reg(StdReg::A),
             0x05 => self.dec_reg(StdReg::B),
             0x0D => self.dec_reg(StdReg::C),
@@ -64,10 +108,11 @@ impl<'m> Cpu<'m> {
             0xC8 => self.ret_cc(FlagCond::Z),
             0xD0 => self.ret_cc(FlagCond::NC),
             0xD8 => self.ret_cc(FlagCond::C),
-            0x20 => self.jp_cond(FlagCond::NZ),
-            0x28 => self.jp_cond(FlagCond::Z),
-            0x30 => self.jp_cond(FlagCond::NC),
-            0x38 => self.jp_cond(FlagCond::C),
+            0x18 => self.jr(),
+            0x20 => self.jr_cond(FlagCond::NZ),
+            0x28 => self.jr_cond(FlagCond::Z),
+            0x30 => self.jr_cond(FlagCond::NC),
+            0x38 => self.jr_cond(FlagCond::C),
             0x01 => self.ld_n_nn(LoadRegnnn::BC),
             0x11 => self.ld_n_nn(LoadRegnnn::DE),
             0x21 => self.ld_n_nn(LoadRegnnn::HL),
@@ -96,13 +141,6 @@ impl<'m> Cpu<'m> {
             0xEA => self.ld_n_a(LoadReg::MemNN),
             0xE0 => self.ld_ff00_a(),
             0xF0 => self.ld_a_ff00(),
-            /* 0x78 => self.ld_r_r(StdReg::A, StdReg::B),
-            0x79 => self.ld_r_r(StdReg::A, StdReg::C),
-            0x7A => self.ld_r_r(StdReg::A, StdReg::D),
-            0x7B => self.ld_r_r(StdReg::A, StdReg::E),
-            0x7C => self.ld_r_r(StdReg::A, StdReg::H),
-            0x7D => self.ld_r_r(StdReg::A, StdReg::L),
-            0x7E => self.ld_r_r(StdReg::A, StdReg::HL), */
             0x40 => self.ld_r_r(StdReg::B, StdReg::B),
             0x41 => self.ld_r_r(StdReg::B, StdReg::C),
             0x42 => self.ld_r_r(StdReg::B, StdReg::D),
@@ -158,8 +196,14 @@ impl<'m> Cpu<'m> {
             0x32 => self.ld_mem_hl_a(),
             0xC3 => self.jp_nn(),
             0xAF => self.xor_aa(),
+            0xC7 => self.rst_00(),
+            0xCF => self.rst_08(),
+            0xD7 => self.rst_10(),
             0xDF => self.rst_18(),
-            // 0xFF => self.rst_38(),
+            0xE7 => self.rst_20(),
+            0xEF => self.rst_28(),
+            0xF7 => self.rst_30(),
+            0xFF => self.rst_38(),
             0x1F => self.rr_n(StdReg::A),
             0x8F => self.adc_a_n(StdRegN::A),
             0x88 => self.adc_a_n(StdRegN::B),
@@ -178,25 +222,33 @@ impl<'m> Cpu<'m> {
             0x24 => self.inc_reg(StdReg::H),
             0x2C => self.inc_reg(StdReg::L),
             0x34 => self.inc_reg(StdReg::HL),
-            // 0x18 => self.rr_n(AnyReg::B),
-            // 0x19 => self.rr_n(AnyReg::C),
-            // 0x1A => self.rr_n(AnyReg::D),
-            // 0x1B => self.rr_n(AnyReg::E),
-            // 0x1C => self.rr_n(AnyReg::H),
-            // 0x1D => self.rr_n(AnyReg::L),
+            0xFE => self.cp_a_n(),
+
             0xF3 => {
                 println!("(0F3) DI => Not implemented");
                 self.pc = self.pc.wrapping_add(1);
                 0
             }
-            0x1E => self.rr_n(StdReg::HL),
-            0xFE => self.cp_a_n(),
+            0xCB => {
+                self.pc = self.pc.wrapping_add(1);
+                let opcode = self.mem.read_byte(self.pc).unwrap();
+                match opcode {
+                    0x1F => self.rr_n(StdReg::A),
+                    0x18 => self.rr_n(StdReg::B),
+                    0x19 => self.rr_n(StdReg::C),
+                    0x1A => self.rr_n(StdReg::D),
+                    0x1B => self.rr_n(StdReg::E),
+                    0x1C => self.rr_n(StdReg::H),
+                    0x1D => self.rr_n(StdReg::L),
+                    0x1E => self.rr_n(StdReg::HL),
+                    _ => {
+                        println!("Opcode not implmented : CB {:#04X}", opcode);
+                        std::process::abort()
+                    }
+                }
+            }
             _ => {
                 println!("Opcode not implmented : {:#04X}", opcode);
-                println!(
-                    "Next byte = {:#04X?}",
-                    self.mem.read_byte(self.pc + 1).unwrap()
-                );
                 std::process::abort()
             }
         }
@@ -212,9 +264,9 @@ impl<'m> Cpu<'m> {
         self.reg.a = self.reg.a.rotate_right(1);
         self.reg.unset_all_flags();
         if carry == 0b0000_0001 {
-            self.reg.set_carry_flag();
+            self.reg.set_c();
         } else {
-            self.reg.unset_carry_flag();
+            self.reg.unset_c();
         }
         self.pc = self.pc.wrapping_add(1);
         4
@@ -226,70 +278,26 @@ impl<'m> Cpu<'m> {
 
         let carry = self.reg.get_carry();
 
+        macro_rules! adc {
+            ($a:expr,$b:expr) => {{
+                if add_will_half_carry($a, $b) {
+                    self.reg.set_h();
+                };
+                if will_carry($a, $b) {
+                    self.reg.set_c();
+                };
+                $a += $b + carry;
+            }};
+        }
+
         match reg {
-            StdRegN::A => {
-                if add_will_half_carry(self.reg.a, self.reg.a) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.a) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.a + carry;
-            }
-            StdRegN::B => {
-                if add_will_half_carry(self.reg.a, self.reg.b) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.b) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.b + carry;
-            }
-            StdRegN::C => {
-                if add_will_half_carry(self.reg.a, self.reg.c) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.c) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.c + carry;
-            }
-            StdRegN::D => {
-                if add_will_half_carry(self.reg.a, self.reg.d) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.d) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.d + carry;
-            }
-            StdRegN::E => {
-                if add_will_half_carry(self.reg.a, self.reg.e) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.e) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.e + carry;
-            }
-            StdRegN::H => {
-                if add_will_half_carry(self.reg.a, self.reg.h) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.h) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.h + carry;
-            }
-            StdRegN::L => {
-                if add_will_half_carry(self.reg.a, self.reg.l) {
-                    self.reg.set_half_carry_flag();
-                };
-                if will_carry(self.reg.a, self.reg.l) {
-                    self.reg.set_carry_flag();
-                };
-                self.reg.a += self.reg.l + carry;
-            }
+            StdRegN::A => adc!(self.reg.a, self.reg.a),
+            StdRegN::B => adc!(self.reg.a, self.reg.b),
+            StdRegN::C => adc!(self.reg.a, self.reg.c),
+            StdRegN::D => adc!(self.reg.a, self.reg.d),
+            StdRegN::E => adc!(self.reg.a, self.reg.e),
+            StdRegN::H => adc!(self.reg.a, self.reg.h),
+            StdRegN::L => adc!(self.reg.a, self.reg.l),
             StdRegN::HL => todo!(),
             StdRegN::N => todo!(),
         }
@@ -340,14 +348,14 @@ impl<'m> Cpu<'m> {
         };
 
         if val.0 == 0x00 {
-            self.reg.set_zero_flag();
+            self.reg.set_z();
         }
 
         if val.1 {
-            self.reg.set_half_carry_flag();
+            self.reg.set_h();
         }
 
-        self.reg.unset_sub_flag();
+        self.reg.unset_n();
 
         self.pc = self.pc.wrapping_add(1);
 
@@ -397,16 +405,16 @@ impl<'m> Cpu<'m> {
         };
 
         if val.0 == 0x00 {
-            self.reg.set_zero_flag();
+            self.reg.set_z();
         } else {
-            self.reg.unset_zero_flag();
+            self.reg.unset_z();
         }
 
         if val.1 {
-            self.reg.set_half_carry_flag();
+            self.reg.set_h();
         }
 
-        self.reg.set_sub_flag();
+        self.reg.set_n();
 
         match reg {
             StdReg::HL => 12,
@@ -414,45 +422,36 @@ impl<'m> Cpu<'m> {
         }
     }
 
-    fn ret_cc(&mut self, cond: FlagCond) -> u8 {
-        let cycles = 8;
+    fn jr(&mut self) -> u8 {
+        let mut cycles = 8;
+        cycles = 12;
+        self.pc = self.pc.wrapping_add(1);
+        let v = self.mem.read_byte(self.pc).unwrap();
+        self.pc = self.pc.wrapping_add(1);
 
-        if cond.check(self.reg.f) {
-            self.pc = self.pop();
+        let sig: u16;
+        let is_neg: bool;
+
+        if (v & 0b1000_0000) == 0b1000_0000 {
+            is_neg = true;
+            sig = !v as u16 + 1;
         } else {
-            self.pc = self.pc.wrapping_add(1);
+            is_neg = false;
+            sig = v as u16;
+        }
+
+        if is_neg {
+            self.pc -= sig;
+        } else {
+            self.pc += sig;
         }
 
         cycles
     }
-
-    // BUG Jumps to the wrong location sometimes??
-    fn jp_cond(&mut self, cond: FlagCond) -> u8 {
-        let mut cycles = 8;
+    fn jr_cond(&mut self, cond: FlagCond) -> u8 {
+        let cycles: u8 = 8;
         if cond.check(self.reg.f) {
-            cycles = 12;
-            self.pc = self.pc.wrapping_add(1);
-            let v = self.mem.read_byte(self.pc).unwrap();
-            self.pc = self.pc.wrapping_add(1);
-
-            let sig: u16;
-            let is_neg: bool;
-
-            // TODO Make this into a fn
-            if (v & 0b1000_0000) == 0b1000_0000 {
-                is_neg = true;
-                sig = !v as u16 + 1;
-            } else {
-                is_neg = false;
-                sig = v as u16;
-            }
-
-            if is_neg {
-                self.pc -= sig;
-            } else {
-                self.pc += sig;
-            }
-            println!("JR {:?} {:#6X?}", cond, self.pc);
+            self.jr();
         } else {
             self.pc = self.pc.wrapping_add(1);
             self.pc = self.pc.wrapping_add(1);
@@ -476,7 +475,7 @@ impl<'m> Cpu<'m> {
     fn xor_aa(&mut self) -> u8 {
         self.reg.a = self.reg.a ^ self.reg.a;
         self.reg.unset_all_flags();
-        self.reg.set_zero_flag();
+        self.reg.set_z();
         self.pc = self.pc.wrapping_add(1);
         println!("XOR A",);
         4
@@ -776,94 +775,64 @@ impl<'m> Cpu<'m> {
         8
     }
 
-    fn rst_18(&mut self) -> u8 {
+    fn rst(&mut self, pc: u16) -> u8 {
         self.pc += 1;
         let lo = self.mem.read_byte(self.pc).unwrap();
         self.pc += 1;
         let hi = self.mem.read_byte(self.pc).unwrap();
         self.push(lo, hi);
-        self.pc = 0x0018;
+        self.pc = pc;
         32
     }
-
+    fn rst_00(&mut self) -> u8 {
+        self.rst(0x0000)
+    }
+    fn rst_08(&mut self) -> u8 {
+        self.rst(0x0008)
+    }
+    fn rst_10(&mut self) -> u8 {
+        self.rst(0x0010)
+    }
+    fn rst_18(&mut self) -> u8 {
+        self.rst(0x0018)
+    }
+    fn rst_20(&mut self) -> u8 {
+        self.rst(0x0020)
+    }
+    fn rst_28(&mut self) -> u8 {
+        self.rst(0x0028)
+    }
+    fn rst_30(&mut self) -> u8 {
+        self.rst(0x0030)
+    }
     fn rst_38(&mut self) -> u8 {
-        self.pc += 1;
-        let lo = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
-        let hi = self.mem.read_byte(self.pc).unwrap();
-        self.push(lo, hi);
-        self.pc = 0x0038;
-        32
+        self.rst(0x0038)
     }
 
     fn rr_n(&mut self, reg: StdReg) -> u8 {
         let mut cycles = 8;
         let c;
 
+        macro_rules! rr {
+            ($a:expr) => {{
+                c = $a & 0x01;
+                $a = $a.rotate_right(1);
+                if self.reg.is_carry() {
+                    $a = $a | 0x80;
+                } else {
+                    $a = $a & 0x7F;
+                }
+            }};
+        }
+
         match reg {
-            StdReg::A => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::B => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::C => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::D => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::E => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::H => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
-            StdReg::L => {
-                c = self.reg.a & 0x01;
-                self.reg.a = self.reg.a.rotate_right(1);
-                if self.reg.is_carry() {
-                    self.reg.a = self.reg.a | 0x80;
-                } else {
-                    self.reg.a = self.reg.a & 0x7F;
-                }
-            }
+            StdReg::A => rr!(self.reg.a),
+            StdReg::B => rr!(self.reg.b),
+            StdReg::C => rr!(self.reg.c),
+            StdReg::D => rr!(self.reg.d),
+            StdReg::E => rr!(self.reg.e),
+            StdReg::H => rr!(self.reg.h),
+            StdReg::L => rr!(self.reg.l),
             StdReg::HL => {
                 cycles = cycles + 8;
                 let mut val = self.mem.read_byte(self.reg.get_hl()).unwrap();
@@ -879,9 +848,9 @@ impl<'m> Cpu<'m> {
         };
 
         if c == 0x01 {
-            self.reg.set_carry_flag();
+            self.reg.set_c();
         } else {
-            self.reg.unset_carry_flag();
+            self.reg.unset_c();
         }
 
         self.pc = self.pc.wrapping_add(1);
@@ -889,10 +858,16 @@ impl<'m> Cpu<'m> {
         cycles // HL = 16
     }
 
+    fn push_hl(&mut self) -> u8 {
+        let cycles: u8 = 16;
+        self.push(self.reg.h, self.reg.l);
+        cycles
+    }
+
     fn push(&mut self, lo: u8, hi: u8) {
-        self.sp -= 1;
+        self.sp = self.sp.wrapping_sub(1);
         self.mem.write_byte(self.sp, lo).unwrap();
-        self.sp -= 1;
+        self.sp = self.sp.wrapping_sub(1);
         self.mem.write_byte(self.sp, hi).unwrap();
 
         println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
@@ -901,9 +876,9 @@ impl<'m> Cpu<'m> {
     fn pop(&mut self) -> u16 {
         println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
         let hi = self.mem.read_byte(self.sp).unwrap();
-        self.sp += 1;
+        self.sp = self.sp.wrapping_add(1);
         let lo = self.mem.read_byte(self.sp).unwrap();
-        self.sp += 1;
+        self.sp = self.sp.wrapping_add(1);
 
         ((hi as u16) << 8) | lo as u16
     }
@@ -927,18 +902,18 @@ impl<'m> Cpu<'m> {
         let n = self.read_u8();
         println!("{} - {}", self.reg.a, n);
         if (self.reg.a & 0xf).wrapping_sub(n & 0xf) & 0x10 == 0x10 {
-            self.reg.set_half_carry_flag();
+            self.reg.set_h();
         }
 
         if self.reg.a.wrapping_sub(n) == 0 {
-            self.reg.set_zero_flag();
+            self.reg.set_z();
         }
 
         if n > self.reg.a {
-            self.reg.set_carry_flag();
+            self.reg.set_c();
         }
 
-        self.reg.set_sub_flag();
+        self.reg.set_n();
 
         self.pc += self.pc.wrapping_add(1);
 
@@ -950,11 +925,167 @@ impl<'m> Cpu<'m> {
         self.pc = self.pop();
         cycles
     }
+
+    fn ret_cc(&mut self, cond: FlagCond) -> u8 {
+        let mut cycles = 8;
+
+        if cond.check(self.reg.f) {
+            cycles = 20;
+            println!("RET {:?}", cond);
+            self.pc = self.pop();
+        } else {
+            self.pc = self.pc.wrapping_add(1);
+        }
+
+        cycles
+    }
+
+    fn call_cc(&mut self, cond: FlagCond) -> u8 {
+        let mut cycles = 12;
+        if cond.check(self.reg.f) {
+            cycles = 24;
+            self.pc = self.pop();
+        } else {
+            self.pc = self.pc.wrapping_add(1);
+        }
+        cycles
+    }
+
+    fn call(&mut self) -> u8 {
+        let cycles = 24;
+
+        let jp = self.read_u16();
+
+        let pos = self.pc.to_le_bytes();
+        self.push(pos[0], pos[1]);
+
+        self.pc = jp;
+
+        cycles
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nop() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let pc1 = cpu.pc;
+        let cycles = cpu.nop();
+        let pc2 = cpu.pc;
+        assert_eq!(pc2, pc1 + 1);
+        assert_eq!(cycles, 4);
+    }
+
+    #[test]
+    fn rrca() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        cpu.reg.a = 0b0000_0001;
+        let cycles = cpu.rrca();
+
+        assert_eq!(cpu.reg.a, 0b1000_0000);
+        assert_eq!(cpu.reg.is_carry(), true);
+        assert_eq!(cycles, 4);
+    }
+
+    #[test]
+    fn ret() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let lo = 0x50;
+        let hi = 0x80;
+
+        cpu.push(lo, hi);
+        let cycles = cpu.ret();
+
+        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cycles, 16);
+    }
+
+    #[test]
+    fn ret_cc() {
+        /* let cycles = 8;
+        if cond.check(self.reg.f) {
+            self.pc = self.pop();
+        } else {
+            self.pc = self.pc.wrapping_add(1);
+        }
+        cycles */
+
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let lo = 0x50;
+        let hi = 0x80;
+        cpu.push(lo, hi);
+
+        cpu.pc = 0x0000;
+        cpu.reg.set_z();
+        let cycles = cpu.ret_cc(FlagCond::NZ);
+        assert_eq!(cpu.pc, 0x0001);
+        assert_eq!(cycles, 8);
+
+        cpu.pc = 0x0000;
+        cpu.reg.unset_z();
+        let cycles = cpu.ret_cc(FlagCond::NZ);
+        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cycles, 20);
+
+        let lo = 0x50;
+        let hi = 0x80;
+        cpu.push(lo, hi);
+
+        cpu.pc = 0x0000;
+        cpu.reg.unset_z();
+        let cycles = cpu.ret_cc(FlagCond::Z);
+        assert_eq!(cpu.pc, 0x0001);
+        assert_eq!(cycles, 8);
+
+        cpu.pc = 0x0000;
+        cpu.reg.set_z();
+        let cycles = cpu.ret_cc(FlagCond::Z);
+        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cycles, 20);
+
+        let lo = 0x50;
+        let hi = 0x80;
+        cpu.push(lo, hi);
+
+        cpu.pc = 0x0000;
+        cpu.reg.set_c();
+        let cycles = cpu.ret_cc(FlagCond::NC);
+        assert_eq!(cpu.pc, 0x0001);
+        assert_eq!(cycles, 8);
+
+        cpu.pc = 0x0000;
+        cpu.reg.unset_c();
+        let cycles = cpu.ret_cc(FlagCond::NC);
+        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cycles, 20);
+
+        let lo = 0x50;
+        let hi = 0x80;
+        cpu.push(lo, hi);
+
+        cpu.pc = 0x0000;
+        cpu.reg.unset_c();
+        let cycles = cpu.ret_cc(FlagCond::C);
+        assert_eq!(cpu.pc, 0x0001);
+        assert_eq!(cycles, 8);
+
+        cpu.pc = 0x0000;
+        cpu.reg.set_c();
+        let cycles = cpu.ret_cc(FlagCond::C);
+        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cycles, 20);
+    }
 
     #[test]
     fn pop_from_stack() {

@@ -1,14 +1,15 @@
 use crate::cartridge::Cartridge;
+use crate::tile::Tile;
 use std::io;
 
 pub struct MemoryMap {
-    memory: [u8; 0xFFFF],
+    memory: [u8; 0xFFFF + 1],
 }
 
 impl Default for MemoryMap {
     fn default() -> MemoryMap {
         MemoryMap {
-            memory: [0; 0xFFFF],
+            memory: [0; 0xFFFF + 1],
         }
     }
 }
@@ -46,6 +47,14 @@ impl MemoryMap {
             self.memory[pos as usize] = byte;
             Ok(byte)
         }
+    }
+
+    pub fn print_tile(&mut self, pos: u16) {
+        let mut t: Vec<u8> = Vec::new();
+        for i in 0..16 {
+            t.push(self.read_byte(pos + i).unwrap())
+        }
+        println!("{}", Tile::new(t));
     }
 }
 
