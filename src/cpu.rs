@@ -88,26 +88,26 @@ impl<'m> Cpu<'m> {
         let opcode = self.mem.read_byte(self.pc).unwrap();
         println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
-            0x00 => self.nop(),
-            0x0F => self.rrca(),
-            0xC9 => self.ret(),
+            0x00 => self.nop(),                //tested
+            0x0F => self.rrca(),               //tested
+            0xC9 => self.ret(),                //tested
+            0xC0 => self.ret_cc(FlagCond::NZ), //tested
+            0xC8 => self.ret_cc(FlagCond::Z),  //tested
+            0xD0 => self.ret_cc(FlagCond::NC), //tested
+            0xD8 => self.ret_cc(FlagCond::C),  //tested
             0xCD => self.call(),
             0xC4 => self.call_cc(FlagCond::NZ),
             0xCC => self.call_cc(FlagCond::Z),
             0xD4 => self.call_cc(FlagCond::NC),
             0xDC => self.call_cc(FlagCond::C),
             0xE5 => self.push_hl(),
-            0x3D => self.dec_reg(StdReg::A),
-            0x05 => self.dec_reg(StdReg::B),
-            0x0D => self.dec_reg(StdReg::C),
-            0x15 => self.dec_reg(StdReg::D),
-            0x1D => self.dec_reg(StdReg::E),
-            0x25 => self.dec_reg(StdReg::H),
-            0x2D => self.dec_reg(StdReg::L),
-            0xC0 => self.ret_cc(FlagCond::NZ),
-            0xC8 => self.ret_cc(FlagCond::Z),
-            0xD0 => self.ret_cc(FlagCond::NC),
-            0xD8 => self.ret_cc(FlagCond::C),
+            0x3D => self.dec_reg(StdReg::A), //tested
+            0x05 => self.dec_reg(StdReg::B), //tested
+            0x0D => self.dec_reg(StdReg::C), //tested
+            0x15 => self.dec_reg(StdReg::D), //tested
+            0x1D => self.dec_reg(StdReg::E), //tested
+            0x25 => self.dec_reg(StdReg::H), //tested
+            0x2D => self.dec_reg(StdReg::L), //tested
             0x18 => self.jr(),
             0x20 => self.jr_cond(FlagCond::NZ),
             0x28 => self.jr_cond(FlagCond::Z),
@@ -117,18 +117,18 @@ impl<'m> Cpu<'m> {
             0x11 => self.ld_n_nn(LoadRegnnn::DE),
             0x21 => self.ld_n_nn(LoadRegnnn::HL),
             0x31 => self.ld_n_nn(LoadRegnnn::SP),
-            0x7F => self.ld_a_n(LoadReg::A),
-            0x78 => self.ld_a_n(LoadReg::B),
-            0x79 => self.ld_a_n(LoadReg::C),
-            0x7A => self.ld_a_n(LoadReg::D),
-            0x7B => self.ld_a_n(LoadReg::E),
-            0x7C => self.ld_a_n(LoadReg::H),
-            0x7D => self.ld_a_n(LoadReg::L),
-            0x0A => self.ld_a_n(LoadReg::MemBC),
-            0x1A => self.ld_a_n(LoadReg::MemDE),
-            0x7E => self.ld_a_n(LoadReg::MemHL),
-            0xFA => self.ld_a_n(LoadReg::MemNN),
-            0x3E => self.ld_a_n(LoadReg::N),
+            0x7F => self.ld_a_n(LoadReg::A),     //tested
+            0x78 => self.ld_a_n(LoadReg::B),     //tested
+            0x79 => self.ld_a_n(LoadReg::C),     //tested
+            0x7A => self.ld_a_n(LoadReg::D),     //tested
+            0x7B => self.ld_a_n(LoadReg::E),     //tested
+            0x7C => self.ld_a_n(LoadReg::H),     //tested
+            0x7D => self.ld_a_n(LoadReg::L),     //tested
+            0x0A => self.ld_a_n(LoadReg::MemBC), //tested
+            0x1A => self.ld_a_n(LoadReg::MemDE), //tested
+            0x7E => self.ld_a_n(LoadReg::MemHL), //tested
+            0xFA => self.ld_a_n(LoadReg::MemNN), //tested
+            0x3E => self.ld_a_n(LoadReg::N),     //tested
             0x47 => self.ld_n_a(LoadReg::B),
             0x4F => self.ld_n_a(LoadReg::C),
             0x57 => self.ld_n_a(LoadReg::D),
@@ -364,7 +364,6 @@ impl<'m> Cpu<'m> {
 
     fn dec_reg(&mut self, reg: StdReg) -> u8 {
         self.pc = self.pc.wrapping_add(1);
-        println!("DEC {:?}", reg);
         let val: (u8, bool) = match reg {
             StdReg::A => {
                 let dec = dec(self.reg.a, 0x01);
@@ -405,6 +404,7 @@ impl<'m> Cpu<'m> {
         };
 
         if val.0 == 0x00 {
+            println!("SET ZERO");
             self.reg.set_z();
         } else {
             self.reg.unset_z();
@@ -1010,15 +1010,51 @@ mod tests {
     }
 
     #[test]
-    fn ret_cc() {
-        /* let cycles = 8;
-        if cond.check(self.reg.f) {
-            self.pc = self.pop();
-        } else {
-            self.pc = self.pc.wrapping_add(1);
-        }
-        cycles */
+    fn ld_a_n() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
 
+        cpu.reg.a = 0x00;
+        cpu.reg.b = 0xFF;
+        let cycles = cpu.ld_a_n(LoadReg::B);
+        assert_eq!(cycles, 4);
+        assert_eq!(cpu.reg.a, cpu.reg.b);
+
+        cpu.reg.b = 0x80;
+        cpu.reg.c = 0x80;
+        cpu.mem.write_byte(0x8080, 0xFF).unwrap();
+        cpu.reg.a = 0x00;
+        let cycles = cpu.ld_a_n(LoadReg::MemBC);
+        assert_eq!(cycles, 8);
+        assert_eq!(cpu.reg.a, 0xFF);
+
+        cpu.mem.write_byte(0x8080, 0xFF).unwrap();
+        cpu.reg.a = 0x00;
+        let cycles = cpu.ld_a_n(LoadReg::MemNN);
+        assert_eq!(cycles, 16);
+        assert_eq!(cpu.reg.a, 0x00);
+    }
+
+    #[test]
+    fn dec_reg() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        cpu.reg.unset_z();
+        cpu.reg.unset_n();
+        cpu.reg.a = 0x01;
+        assert_eq!(cpu.dec_reg(StdReg::A), 4);
+        assert_eq!(cpu.reg.a, 0x00);
+        assert_eq!(cpu.reg.is_z(), true);
+        assert_eq!(cpu.reg.is_n(), true);
+
+        cpu.reg.a = 0b0001_0000;
+        assert_eq!(cpu.dec_reg(StdReg::A), 4);
+        assert_eq!(cpu.reg.is_h(), true);
+    }
+
+    #[test]
+    fn ret_cc() {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
 

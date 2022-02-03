@@ -14,7 +14,7 @@ use rust_boy::memorymap::MemoryMap;
 
 fn main() {
     // LOAD CARTRIDGE
-    let rom_path = "roms/dmg-acid2.gb";
+    let rom_path = "roms/cpu_instrs.gb";
     let cartridge = Cartridge::load(rom_path);
     let mut memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);

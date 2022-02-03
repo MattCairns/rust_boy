@@ -66,7 +66,7 @@ impl FlagCond {
     /// # Examples
     /// ```
     /// use rust_boy::registers::FlagCond;
-    /// let flags : u8 = 0b00001111;
+    /// let flags : u8 = 0b11110000;
     /// let cond = FlagCond::NZ;
     /// assert_eq!(cond.check(flags), false);
     ///
@@ -159,7 +159,7 @@ impl Registers {
     }
 
     pub fn is_z(&self) -> bool {
-        if self.f & 0b0000_0001 == 0b0000_0001 {
+        if self.f & 0b1000_0000 == 0b1000_0000 {
             true
         } else {
             false
@@ -167,7 +167,7 @@ impl Registers {
     }
 
     pub fn is_n(&self) -> bool {
-        if self.f & 0b0000_0010 == 0b0000_0010 {
+        if self.f & 0b0100_0000 == 0b0100_0000 {
             true
         } else {
             false
@@ -175,7 +175,7 @@ impl Registers {
     }
 
     pub fn is_h(&self) -> bool {
-        if self.f & 0b0000_0100 == 0b0000_0100 {
+        if self.f & 0b0010_0000 == 0b0010_0000 {
             true
         } else {
             false
@@ -183,7 +183,7 @@ impl Registers {
     }
 
     pub fn is_carry(&self) -> bool {
-        if self.f & 0x08 == 0x08 {
+        if self.f & 0b0001_0000 == 0b0001_0000 {
             true
         } else {
             false
@@ -244,14 +244,14 @@ impl Registers {
 /// use rust_boy::registers::set_flag;
 ///
 /// let flag = 0b00000000;
-/// let pos = 7;
-/// assert_eq!(set_flag(flag, pos), 0b00000001);
-/// let pos = 6;
-/// assert_eq!(set_flag(flag, pos), 0b00000010);
-/// let pos = 5;
-/// assert_eq!(set_flag(flag, pos), 0b00000100);
-/// let pos = 4;
-/// assert_eq!(set_flag(flag, pos), 0b00001000);
+/// let pos = 0;
+/// assert_eq!(set_flag(flag, pos), 0b10000000);
+/// let pos = 1;
+/// assert_eq!(set_flag(flag, pos), 0b01000000);
+/// let pos = 2;
+/// assert_eq!(set_flag(flag, pos), 0b00100000);
+/// let pos = 3;
+/// assert_eq!(set_flag(flag, pos), 0b00010000);
 /// ```
 pub fn set_flag(flag: u8, pos: u32) -> u8 {
     let byte: u8 = 0b1000_0000;
