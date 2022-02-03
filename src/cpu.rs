@@ -782,7 +782,7 @@ impl<'m> Cpu<'m> {
         let hi = self.mem.read_byte(self.pc).unwrap();
         self.push(lo, hi);
         self.pc = pc;
-        32
+        16
     }
     fn rst_00(&mut self) -> u8 {
         self.rst(0x0000)
@@ -1154,5 +1154,28 @@ mod tests {
 
         assert_eq!(pc1, sp1);
         assert_eq!(pc2, sp2);
+    }
+
+    #[test]
+    fn rst() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        assert_eq!(cpu.rst_00(), 16);
+        assert_eq!(cpu.pc, 0x0000);
+        assert_eq!(cpu.rst_08(), 16);
+        assert_eq!(cpu.pc, 0x0008);
+        assert_eq!(cpu.rst_10(), 16);
+        assert_eq!(cpu.pc, 0x0010);
+        assert_eq!(cpu.rst_18(), 16);
+        assert_eq!(cpu.pc, 0x0018);
+        assert_eq!(cpu.rst_20(), 16);
+        assert_eq!(cpu.pc, 0x0020);
+        assert_eq!(cpu.rst_28(), 16);
+        assert_eq!(cpu.pc, 0x0028);
+        assert_eq!(cpu.rst_30(), 16);
+        assert_eq!(cpu.pc, 0x0030);
+        assert_eq!(cpu.rst_38(), 16);
+        assert_eq!(cpu.pc, 0x0038);
     }
 }
