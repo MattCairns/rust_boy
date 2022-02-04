@@ -80,26 +80,26 @@ impl<'m> Cpu<'m> {
     }
 
     pub fn step(&mut self) -> u8 {
-        /* let start = 0x8000;
-        for i in (0..384) {
-            let start = start + i * 16;
+        let mut start = 0x8000;
+        for i in 0..10 {
             self.mem.print_tile(start);
-        } */
+            start = start + (i * 16);
+        }
         let opcode = self.mem.read_byte(self.pc).unwrap();
-        println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
+        // println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
-            0x00 => self.nop(),                //tested
-            0x0F => self.rrca(),               //tested
-            0xC9 => self.ret(),                //tested
-            0xC0 => self.ret_cc(FlagCond::NZ), //tested
-            0xC8 => self.ret_cc(FlagCond::Z),  //tested
-            0xD0 => self.ret_cc(FlagCond::NC), //tested
-            0xD8 => self.ret_cc(FlagCond::C),  //tested
-            0xCD => self.call(),
-            0xC4 => self.call_cc(FlagCond::NZ),
-            0xCC => self.call_cc(FlagCond::Z),
-            0xD4 => self.call_cc(FlagCond::NC),
-            0xDC => self.call_cc(FlagCond::C),
+            0x00 => self.nop(),                 //tested
+            0x0F => self.rrca(),                //tested
+            0xC9 => self.ret(),                 //tested
+            0xC0 => self.ret_cc(FlagCond::NZ),  //tested
+            0xC8 => self.ret_cc(FlagCond::Z),   //tested
+            0xD0 => self.ret_cc(FlagCond::NC),  //tested
+            0xD8 => self.ret_cc(FlagCond::C),   //tested
+            0xCD => self.call(),                //tested
+            0xC4 => self.call_cc(FlagCond::NZ), //tested
+            0xCC => self.call_cc(FlagCond::Z),  //tested
+            0xD4 => self.call_cc(FlagCond::NC), //tested
+            0xDC => self.call_cc(FlagCond::C),  //tested
             0xE5 => self.push_hl(),
             0x3D => self.dec_reg(StdReg::A), //tested
             0x05 => self.dec_reg(StdReg::B), //tested
@@ -196,15 +196,15 @@ impl<'m> Cpu<'m> {
             0x32 => self.ld_mem_hl_a(),
             0xC3 => self.jp_nn(),
             0xAF => self.xor_aa(),
-            0xC7 => self.rst_00(),
-            0xCF => self.rst_08(),
-            0xD7 => self.rst_10(),
-            0xDF => self.rst_18(),
-            0xE7 => self.rst_20(),
-            0xEF => self.rst_28(),
-            0xF7 => self.rst_30(),
-            0xFF => self.rst_38(),
-            0x1F => self.rr_n(StdReg::A),
+            0xC7 => self.rst_00(),        //tested
+            0xCF => self.rst_08(),        //tested
+            0xD7 => self.rst_10(),        //tested
+            0xDF => self.rst_18(),        //tested
+            0xE7 => self.rst_20(),        //tested
+            0xEF => self.rst_28(),        //tested
+            0xF7 => self.rst_30(),        //tested
+            0xFF => self.rst_38(),        //tested
+            0x1F => self.rr_n(StdReg::A), //tested
             0x8F => self.adc_a_n(StdRegN::A),
             0x88 => self.adc_a_n(StdRegN::B),
             0x89 => self.adc_a_n(StdRegN::C),
@@ -233,13 +233,13 @@ impl<'m> Cpu<'m> {
                 self.pc = self.pc.wrapping_add(1);
                 let opcode = self.mem.read_byte(self.pc).unwrap();
                 match opcode {
-                    0x1F => self.rr_n(StdReg::A),
-                    0x18 => self.rr_n(StdReg::B),
-                    0x19 => self.rr_n(StdReg::C),
-                    0x1A => self.rr_n(StdReg::D),
-                    0x1B => self.rr_n(StdReg::E),
-                    0x1C => self.rr_n(StdReg::H),
-                    0x1D => self.rr_n(StdReg::L),
+                    0x1F => self.rr_n(StdReg::A), //tested
+                    0x18 => self.rr_n(StdReg::B), //tested
+                    0x19 => self.rr_n(StdReg::C), //tested
+                    0x1A => self.rr_n(StdReg::D), //tested
+                    0x1B => self.rr_n(StdReg::E), //tested
+                    0x1C => self.rr_n(StdReg::H), //tested
+                    0x1D => self.rr_n(StdReg::L), //tested
                     0x1E => self.rr_n(StdReg::HL),
                     _ => {
                         println!("Opcode not implmented : CB {:#04X}", opcode);
@@ -808,7 +808,7 @@ impl<'m> Cpu<'m> {
     }
 
     fn rr_n(&mut self, reg: StdReg) -> u8 {
-        let mut cycles = 8;
+        let mut cycles = 4;
         let c;
 
         macro_rules! rr {
@@ -941,24 +941,19 @@ impl<'m> Cpu<'m> {
     fn call_cc(&mut self, cond: FlagCond) -> u8 {
         let mut cycles = 12;
         if cond.check(self.reg.f) {
-            cycles = 24;
-            self.pc = self.pop();
+            cycles = self.call();
         } else {
-            self.pc = self.pc.wrapping_add(1);
+            self.pc = self.pc.wrapping_add(3);
         }
         cycles
     }
 
     fn call(&mut self) -> u8 {
         let cycles = 24;
-
         let jp = self.read_u16();
-
-        let pos = self.pc.to_le_bytes();
+        let pos = self.pc.to_be_bytes();
         self.push(pos[0], pos[1]);
-
         self.pc = jp;
-
         cycles
     }
 }
@@ -990,6 +985,28 @@ mod tests {
         assert_eq!(cpu.reg.a, 0b1000_0000);
         assert_eq!(cpu.reg.is_carry(), true);
         assert_eq!(cycles, 4);
+    }
+
+    #[test]
+    fn rr_n() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! rr {
+            ($x:expr, $reg:expr) => {
+                $x = 0b0000_0001;
+                assert_eq!(cpu.rr_n($reg), 4);
+                assert_eq!($x, 0b1000_0000);
+                assert_eq!(cpu.reg.is_carry(), true);
+            };
+        }
+        rr!(cpu.reg.a, StdReg::A);
+        rr!(cpu.reg.b, StdReg::B);
+        rr!(cpu.reg.c, StdReg::C);
+        rr!(cpu.reg.d, StdReg::D);
+        rr!(cpu.reg.e, StdReg::E);
+        rr!(cpu.reg.h, StdReg::H);
+        rr!(cpu.reg.l, StdReg::L);
     }
 
     #[test]
@@ -1361,5 +1378,71 @@ mod tests {
         assert_eq!(cpu.pc, 0x0030);
         assert_eq!(cpu.rst_38(), 16);
         assert_eq!(cpu.pc, 0x0038);
+    }
+
+    #[test]
+    fn call() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0x88).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, 0x99).unwrap();
+
+        assert_eq!(cpu.call(), 24);
+        assert_eq!(cpu.pc, 0x9988);
+        assert_eq!(cpu.mem.read_byte(cpu.sp + 1).unwrap(), 0x82);
+        assert_eq!(cpu.mem.read_byte(cpu.sp + 2).unwrap(), 0x00);
+    }
+
+    #[test]
+    fn call_cc() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! call_success {
+            ($reg:expr) => {
+                cpu.pc = 0x8200;
+                cpu.sp = 0xDFFE;
+                cpu.mem.write_byte(cpu.pc + 1, 0x88).unwrap();
+                cpu.mem.write_byte(cpu.pc + 2, 0x99).unwrap();
+
+                println!("{:?}", $reg);
+                assert_eq!(cpu.call_cc($reg), 24);
+                assert_eq!(cpu.pc, 0x9988);
+                assert_eq!(cpu.mem.read_byte(cpu.sp + 1).unwrap(), 0x82);
+                assert_eq!(cpu.mem.read_byte(cpu.sp + 2).unwrap(), 0x00);
+            };
+        }
+
+        cpu.reg.set_z();
+        call_success!(FlagCond::Z);
+        cpu.reg.unset_z();
+        call_success!(FlagCond::NZ);
+        cpu.reg.set_c();
+        call_success!(FlagCond::C);
+        cpu.reg.unset_c();
+        call_success!(FlagCond::NC);
+
+        macro_rules! call_fail {
+            ($reg:expr) => {
+                cpu.pc = 0x8200;
+                cpu.mem.write_byte(cpu.pc + 1, 0x88).unwrap();
+                cpu.mem.write_byte(cpu.pc + 2, 0x99).unwrap();
+
+                cpu.reg.unset_z();
+                assert_eq!(cpu.call_cc(FlagCond::Z), 12);
+                assert_eq!(cpu.pc, 0x8200 + 3);
+            };
+        }
+
+        cpu.reg.unset_z();
+        call_fail!(FlagCond::Z);
+        cpu.reg.set_z();
+        call_fail!(FlagCond::NZ);
+        cpu.reg.unset_c();
+        call_fail!(FlagCond::C);
+        cpu.reg.set_c();
+        call_fail!(FlagCond::NC);
     }
 }
