@@ -159,35 +159,19 @@ impl Registers {
     }
 
     pub fn is_z(&self) -> bool {
-        if self.f & 0b1000_0000 == 0b1000_0000 {
-            true
-        } else {
-            false
-        }
+        self.f & 0b1000_0000 == 0b1000_0000
     }
 
     pub fn is_n(&self) -> bool {
-        if self.f & 0b0100_0000 == 0b0100_0000 {
-            true
-        } else {
-            false
-        }
+        self.f & 0b0100_0000 == 0b0100_0000
     }
 
     pub fn is_h(&self) -> bool {
-        if self.f & 0b0010_0000 == 0b0010_0000 {
-            true
-        } else {
-            false
-        }
+        self.f & 0b0010_0000 == 0b0010_0000
     }
 
     pub fn is_carry(&self) -> bool {
-        if self.f & 0b0001_0000 == 0b0001_0000 {
-            true
-        } else {
-            false
-        }
+        self.f & 0b0001_0000 == 0b0001_0000
     }
 
     pub fn get_carry(&self) -> u8 {
@@ -279,22 +263,18 @@ pub fn clear_flag(flag: u8, pos: u32) -> u8 {
 /// # Examples
 ///
 /// ```
-/// use rust_boy::registers::add_will_half_carry;
+/// use rust_boy::registers::will_half_carry;
 ///
 /// let v1 = 0b00001000;
 /// let v2 = 0b00001000;
-/// assert_eq!(add_will_half_carry(v1, v2), true);
+/// assert_eq!(will_half_carry(v1, v2), true);
 ///
 /// let v1 = 0b00000000;
 /// let v2 = 0b00000000;
-/// assert_eq!(add_will_half_carry(v1, v2), false);
+/// assert_eq!(will_half_carry(v1, v2), false);
 /// ```
-pub fn add_will_half_carry(v1: u8, v2: u8) -> bool {
-    if (v1 & 0xf).wrapping_add(v2 & 0xf) & 0x10 == 0x10 {
-        true
-    } else {
-        false
-    }
+pub fn will_half_carry(v1: u8, v2: u8) -> bool {
+    (v1 & 0xf).wrapping_add(v2 & 0xf) & 0x10 == 0x10
 }
 
 /// Returns true if the half carry bit will
@@ -303,22 +283,18 @@ pub fn add_will_half_carry(v1: u8, v2: u8) -> bool {
 /// # Examples
 ///
 /// ```
-/// use rust_boy::registers::sub_will_half_carry;
+/// use rust_boy::registers::will_half_borrow;
 ///
-/// let v1 = 0b00001000;
+/// let v1 = 0b00010000;
 /// let v2 = 0b00001000;
-/// assert_eq!(sub_will_half_carry(v1, v2), true);
+/// assert_eq!(will_half_borrow(v1, v2), true);
 ///
 /// let v1 = 0b00000000;
 /// let v2 = 0b00000000;
-/// assert_eq!(sub_will_half_carry(v1, v2), false);
+/// assert_eq!(will_half_borrow(v1, v2), false);
 /// ```
-pub fn sub_will_half_carry(v1: u8, v2: u8) -> bool {
-    if (v1 & 0x8).wrapping_sub(v2 & 0x8) & 0x10 == 0x10 {
-        true
-    } else {
-        false
-    }
+pub fn will_half_borrow(v1: u8, v2: u8) -> bool {
+    (v1 & 0xf).wrapping_sub(v2 & 0xf) & 0x10 == 0x10
 }
 
 /// Returns true if the carry bit will be set
@@ -338,21 +314,13 @@ pub fn sub_will_half_carry(v1: u8, v2: u8) -> bool {
 /// assert_eq!(will_carry(v1, v2), false);
 /// ```
 pub fn will_carry(v1: u8, v2: u8) -> bool {
-    if ((v1 & 0x01) + (v2 & 0x01)) & 0x02 == 0x02 {
-        true
-    } else {
-        false
-    }
+    ((v1 & 0x01) + (v2 & 0x01)) & 0x02 == 0x02
 }
 
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
-    (value.wrapping_sub(amt), sub_will_half_carry(value, amt))
+    (value.wrapping_sub(amt), will_half_borrow(value, amt))
 }
 
 pub fn inc(value: u8, amt: u8) -> (u8, bool) {
-    if value == 0xFF {
-        (0x00, false)
-    } else {
-        (value + amt, add_will_half_carry(value, amt))
-    }
+    (value.wrapping_add(amt), will_half_carry(value, amt))
 }

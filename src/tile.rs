@@ -20,16 +20,16 @@ impl std::fmt::Display for Tile {
                 let hb = self.data[i] & (1 << offset) != 0;
                 let lb = self.data[i + 1] & (1 << offset) != 0;
 
-                if lb == false && hb == false {
+                if !lb && !hb {
                     row.push(' ');
                     row.push(' ');
-                } else if lb == false && hb == true {
+                } else if !lb && hb {
                     row.push('░');
                     row.push('░');
-                } else if lb == true && hb == false {
+                } else if lb && !hb {
                     row.push('▒');
                     row.push('▒');
-                } else if lb == true && hb == true {
+                } else if lb && hb {
                     row.push('▓');
                     row.push('▓');
                 }
@@ -40,7 +40,7 @@ impl std::fmt::Display for Tile {
             row.push('\n');
         }
 
-        println!("");
+        println!();
         write!(f, "{}", row)
     }
 }

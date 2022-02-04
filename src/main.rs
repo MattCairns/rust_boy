@@ -52,7 +52,7 @@ fn main() {
     let mut quit = false;
     let mut slider = 0.0;
 
-    let iters = 10000;
+    let _iters = 10000;
     let mut i = 100;
 
     let start_time = Instant::now();

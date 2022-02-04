@@ -49,7 +49,7 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new(data: &Vec<u8>) -> Self {
+    pub fn new(data: &[u8]) -> Self {
         let logo = data[0x104..0x0133 + 0x1].to_vec();
         let title = match std::str::from_utf8(&data[0x0134..0x0143 + 0x1]) {
             Ok(v) => v,
@@ -80,10 +80,7 @@ impl Header {
     }
 
     pub fn is_compatible(&self) -> bool {
-        match self.cartridge_type {
-            CartridgeType::RomOnly => true,
-            _ => false,
-        }
+        matches!(self.cartridge_type, CartridgeType::RomOnly)
     }
 
     pub fn print_logo(&self) {

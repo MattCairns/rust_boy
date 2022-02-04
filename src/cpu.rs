@@ -129,67 +129,67 @@ impl<'m> Cpu<'m> {
             0x7E => self.ld_a_n(LoadReg::MemHL), //tested
             0xFA => self.ld_a_n(LoadReg::MemNN), //tested
             0x3E => self.ld_a_n(LoadReg::N),     //tested
-            0x47 => self.ld_n_a(LoadReg::B),
-            0x4F => self.ld_n_a(LoadReg::C),
-            0x57 => self.ld_n_a(LoadReg::D),
-            0x5F => self.ld_n_a(LoadReg::E),
-            0x67 => self.ld_n_a(LoadReg::H),
-            0x6F => self.ld_n_a(LoadReg::L),
-            0x02 => self.ld_n_a(LoadReg::MemBC),
-            0x12 => self.ld_n_a(LoadReg::MemDE),
-            0x77 => self.ld_n_a(LoadReg::MemHL),
-            0xEA => self.ld_n_a(LoadReg::MemNN),
+            0x47 => self.ld_n_a(LoadReg::B),     //tested
+            0x4F => self.ld_n_a(LoadReg::C),     //tested
+            0x57 => self.ld_n_a(LoadReg::D),     //tested
+            0x5F => self.ld_n_a(LoadReg::E),     //tested
+            0x67 => self.ld_n_a(LoadReg::H),     //tested
+            0x6F => self.ld_n_a(LoadReg::L),     //tested
+            0x02 => self.ld_n_a(LoadReg::MemBC), //tested
+            0x12 => self.ld_n_a(LoadReg::MemDE), //tested
+            0x77 => self.ld_n_a(LoadReg::MemHL), //tested
+            0xEA => self.ld_n_a(LoadReg::MemNN), //tested
             0xE0 => self.ld_ff00_a(),
             0xF0 => self.ld_a_ff00(),
-            0x40 => self.ld_r_r(StdReg::B, StdReg::B),
-            0x41 => self.ld_r_r(StdReg::B, StdReg::C),
-            0x42 => self.ld_r_r(StdReg::B, StdReg::D),
-            0x43 => self.ld_r_r(StdReg::B, StdReg::E),
-            0x44 => self.ld_r_r(StdReg::B, StdReg::H),
-            0x45 => self.ld_r_r(StdReg::B, StdReg::L),
-            0x46 => self.ld_r_r(StdReg::B, StdReg::HL),
-            0x48 => self.ld_r_r(StdReg::C, StdReg::B),
-            0x49 => self.ld_r_r(StdReg::C, StdReg::C),
-            0x4A => self.ld_r_r(StdReg::C, StdReg::D),
-            0x4B => self.ld_r_r(StdReg::C, StdReg::E),
-            0x4C => self.ld_r_r(StdReg::C, StdReg::H),
-            0x4D => self.ld_r_r(StdReg::C, StdReg::L),
-            0x4E => self.ld_r_r(StdReg::C, StdReg::HL),
-            0x50 => self.ld_r_r(StdReg::D, StdReg::B),
-            0x51 => self.ld_r_r(StdReg::D, StdReg::C),
-            0x52 => self.ld_r_r(StdReg::D, StdReg::D),
-            0x53 => self.ld_r_r(StdReg::D, StdReg::E),
-            0x54 => self.ld_r_r(StdReg::D, StdReg::H),
-            0x55 => self.ld_r_r(StdReg::D, StdReg::L),
-            0x56 => self.ld_r_r(StdReg::D, StdReg::HL),
-            0x58 => self.ld_r_r(StdReg::E, StdReg::B),
-            0x59 => self.ld_r_r(StdReg::E, StdReg::C),
-            0x5A => self.ld_r_r(StdReg::E, StdReg::D),
-            0x5B => self.ld_r_r(StdReg::E, StdReg::E),
-            0x5C => self.ld_r_r(StdReg::E, StdReg::H),
-            0x5D => self.ld_r_r(StdReg::E, StdReg::L),
-            0x5E => self.ld_r_r(StdReg::E, StdReg::HL),
-            0x60 => self.ld_r_r(StdReg::H, StdReg::B),
-            0x61 => self.ld_r_r(StdReg::H, StdReg::C),
-            0x62 => self.ld_r_r(StdReg::H, StdReg::D),
-            0x63 => self.ld_r_r(StdReg::H, StdReg::E),
-            0x64 => self.ld_r_r(StdReg::H, StdReg::H),
-            0x65 => self.ld_r_r(StdReg::H, StdReg::L),
-            0x66 => self.ld_r_r(StdReg::H, StdReg::HL),
-            0x68 => self.ld_r_r(StdReg::L, StdReg::B),
-            0x69 => self.ld_r_r(StdReg::L, StdReg::C),
-            0x6A => self.ld_r_r(StdReg::L, StdReg::D),
-            0x6B => self.ld_r_r(StdReg::L, StdReg::E),
-            0x6C => self.ld_r_r(StdReg::L, StdReg::H),
-            0x6D => self.ld_r_r(StdReg::L, StdReg::L),
-            0x6E => self.ld_r_r(StdReg::L, StdReg::HL),
-            0x70 => self.ld_r_r(StdReg::HL, StdReg::B),
-            0x71 => self.ld_r_r(StdReg::HL, StdReg::C),
-            0x72 => self.ld_r_r(StdReg::HL, StdReg::D),
-            0x73 => self.ld_r_r(StdReg::HL, StdReg::E),
-            0x74 => self.ld_r_r(StdReg::HL, StdReg::H),
-            0x75 => self.ld_r_r(StdReg::HL, StdReg::L),
-            0x36 => self.ld_r_r(StdReg::HL, StdReg::HL),
+            0x40 => self.ld_r_r(StdReg::B, StdReg::B), //tested
+            0x41 => self.ld_r_r(StdReg::B, StdReg::C), //tested
+            0x42 => self.ld_r_r(StdReg::B, StdReg::D), //tested
+            0x43 => self.ld_r_r(StdReg::B, StdReg::E), //tested
+            0x44 => self.ld_r_r(StdReg::B, StdReg::H), //tested
+            0x45 => self.ld_r_r(StdReg::B, StdReg::L), //tested
+            0x46 => self.ld_r_r(StdReg::B, StdReg::HL), //tested
+            0x48 => self.ld_r_r(StdReg::C, StdReg::B), //tested
+            0x49 => self.ld_r_r(StdReg::C, StdReg::C), //tested
+            0x4A => self.ld_r_r(StdReg::C, StdReg::D), //tested
+            0x4B => self.ld_r_r(StdReg::C, StdReg::E), //tested
+            0x4C => self.ld_r_r(StdReg::C, StdReg::H), //tested
+            0x4D => self.ld_r_r(StdReg::C, StdReg::L), //tested
+            0x4E => self.ld_r_r(StdReg::C, StdReg::HL), //tested
+            0x50 => self.ld_r_r(StdReg::D, StdReg::B), //tested
+            0x51 => self.ld_r_r(StdReg::D, StdReg::C), //tested
+            0x52 => self.ld_r_r(StdReg::D, StdReg::D), //tested
+            0x53 => self.ld_r_r(StdReg::D, StdReg::E), //tested
+            0x54 => self.ld_r_r(StdReg::D, StdReg::H), //tested
+            0x55 => self.ld_r_r(StdReg::D, StdReg::L), //tested
+            0x56 => self.ld_r_r(StdReg::D, StdReg::HL), //tested
+            0x58 => self.ld_r_r(StdReg::E, StdReg::B), //tested
+            0x59 => self.ld_r_r(StdReg::E, StdReg::C), //tested
+            0x5A => self.ld_r_r(StdReg::E, StdReg::D), //tested
+            0x5B => self.ld_r_r(StdReg::E, StdReg::E), //tested
+            0x5C => self.ld_r_r(StdReg::E, StdReg::H), //tested
+            0x5D => self.ld_r_r(StdReg::E, StdReg::L), //tested
+            0x5E => self.ld_r_r(StdReg::E, StdReg::HL), //tested
+            0x60 => self.ld_r_r(StdReg::H, StdReg::B), //tested
+            0x61 => self.ld_r_r(StdReg::H, StdReg::C), //tested
+            0x62 => self.ld_r_r(StdReg::H, StdReg::D), //tested
+            0x63 => self.ld_r_r(StdReg::H, StdReg::E), //tested
+            0x64 => self.ld_r_r(StdReg::H, StdReg::H), //tested
+            0x65 => self.ld_r_r(StdReg::H, StdReg::L), //tested
+            0x66 => self.ld_r_r(StdReg::H, StdReg::HL), //tested
+            0x68 => self.ld_r_r(StdReg::L, StdReg::B), //tested
+            0x69 => self.ld_r_r(StdReg::L, StdReg::C), //tested
+            0x6A => self.ld_r_r(StdReg::L, StdReg::D), //tested
+            0x6B => self.ld_r_r(StdReg::L, StdReg::E), //tested
+            0x6C => self.ld_r_r(StdReg::L, StdReg::H), //tested
+            0x6D => self.ld_r_r(StdReg::L, StdReg::L), //tested
+            0x6E => self.ld_r_r(StdReg::L, StdReg::HL), //tested
+            0x70 => self.ld_r_r(StdReg::HL, StdReg::B), //tested
+            0x71 => self.ld_r_r(StdReg::HL, StdReg::C), //tested
+            0x72 => self.ld_r_r(StdReg::HL, StdReg::D), //tested
+            0x73 => self.ld_r_r(StdReg::HL, StdReg::E), //tested
+            0x74 => self.ld_r_r(StdReg::HL, StdReg::H), //tested
+            0x75 => self.ld_r_r(StdReg::HL, StdReg::L), //tested
+            0x36 => self.ld_r_r(StdReg::HL, StdReg::HL), //tested
             0x2A => self.ldi_a_memhl(),
             0x06 => self.ld_b_n(),
             0x0E => self.ld_c_n(),
@@ -214,13 +214,13 @@ impl<'m> Cpu<'m> {
             0x8D => self.adc_a_n(StdRegN::L),
             0x8E => self.adc_a_n(StdRegN::HL),
             0xCE => self.adc_a_n(StdRegN::N),
-            0x3C => self.inc_reg(StdReg::A),
-            0x04 => self.inc_reg(StdReg::B),
-            0x0C => self.inc_reg(StdReg::C),
-            0x14 => self.inc_reg(StdReg::D),
-            0x1C => self.inc_reg(StdReg::E),
-            0x24 => self.inc_reg(StdReg::H),
-            0x2C => self.inc_reg(StdReg::L),
+            0x3C => self.inc_reg(StdReg::A), //tested
+            0x04 => self.inc_reg(StdReg::B), //tested
+            0x0C => self.inc_reg(StdReg::C), //tested
+            0x14 => self.inc_reg(StdReg::D), //tested
+            0x1C => self.inc_reg(StdReg::E), //tested
+            0x24 => self.inc_reg(StdReg::H), //tested
+            0x2C => self.inc_reg(StdReg::L), //tested
             0x34 => self.inc_reg(StdReg::HL),
             0xFE => self.cp_a_n(),
 
@@ -280,7 +280,7 @@ impl<'m> Cpu<'m> {
 
         macro_rules! adc {
             ($a:expr,$b:expr) => {{
-                if add_will_half_carry($a, $b) {
+                if will_half_carry($a, $b) {
                     self.reg.set_h();
                 };
                 if will_carry($a, $b) {
@@ -306,7 +306,7 @@ impl<'m> Cpu<'m> {
     }
 
     fn inc_reg(&mut self, reg: StdReg) -> u8 {
-        let mut cycles = 4;
+        let cycles = 4;
         let val: (u8, bool) = match reg {
             StdReg::A => {
                 let inc = inc(self.reg.a, 0x01);
@@ -324,7 +324,6 @@ impl<'m> Cpu<'m> {
                 inc
             }
             StdReg::D => {
-                println!("DEC D {:#4X}", self.reg.d);
                 let inc = inc(self.reg.d, 0x01);
                 self.reg.d = inc.0;
                 inc
@@ -423,8 +422,7 @@ impl<'m> Cpu<'m> {
     }
 
     fn jr(&mut self) -> u8 {
-        let mut cycles = 8;
-        cycles = 12;
+        let cycles = 12;
         self.pc = self.pc.wrapping_add(1);
         let v = self.mem.read_byte(self.pc).unwrap();
         self.pc = self.pc.wrapping_add(1);
@@ -489,7 +487,7 @@ impl<'m> Cpu<'m> {
 
         println!("LD {:#6X} A", b);
 
-        if b >= 0xFF00 && b < 0xFFFF {
+        if (0xFF00..0xFFFF).contains(&b) {
             self.mem.write_byte(b, self.reg.a).unwrap();
         }
 
@@ -506,7 +504,7 @@ impl<'m> Cpu<'m> {
 
         println!("LD A {:#6X}", b);
 
-        if b >= 0xFF00 && b < 0xFFFF {
+        if (0xFF00..0xFFFF).contains(&b) {
             self.reg.a = self.mem.read_byte(b).unwrap();
             println!("{:#4X}", self.mem.read_byte(b).unwrap());
         }
@@ -519,7 +517,7 @@ impl<'m> Cpu<'m> {
     fn ld_r_r(&mut self, r1: StdReg, r2: StdReg) -> u8 {
         println!("LD {:?} {:?}", r1, r2);
         let mut cycles = 4;
-        let ret = match r1 {
+        let _ret = match r1 {
             StdReg::A => match r2 {
                 StdReg::A => self.reg.a = self.reg.a,
                 StdReg::B => self.reg.a = self.reg.b,
@@ -529,7 +527,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.a = self.reg.h,
                 StdReg::L => self.reg.a = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.a = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -542,7 +540,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.b = self.reg.h,
                 StdReg::L => self.reg.b = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.b = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -555,7 +553,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.c = self.reg.h,
                 StdReg::L => self.reg.c = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.c = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -568,7 +566,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.d = self.reg.h,
                 StdReg::L => self.reg.d = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.d = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -581,7 +579,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.e = self.reg.h,
                 StdReg::L => self.reg.e = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.e = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -594,7 +592,7 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.h = self.reg.h,
                 StdReg::L => self.reg.h = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.h = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
@@ -607,12 +605,12 @@ impl<'m> Cpu<'m> {
                 StdReg::H => self.reg.l = self.reg.h,
                 StdReg::L => self.reg.l = self.reg.l,
                 StdReg::HL => {
-                    cycles = cycles + 4;
+                    cycles += 4;
                     self.reg.l = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 }
             },
             StdReg::HL => {
-                cycles = cycles + 4;
+                cycles += 4;
                 match r2 {
                     StdReg::A => self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap(),
                     StdReg::B => self.mem.write_byte(self.reg.get_hl(), self.reg.b).unwrap(),
@@ -818,9 +816,9 @@ impl<'m> Cpu<'m> {
                 c = $a & 0x01;
                 $a = $a.rotate_right(1);
                 if self.reg.is_carry() {
-                    $a = $a | 0x80;
+                    $a |= 0x80;
                 } else {
-                    $a = $a & 0x7F;
+                    $a &= 0x7F;
                 }
             }};
         }
@@ -834,7 +832,7 @@ impl<'m> Cpu<'m> {
             StdReg::H => rr!(self.reg.h),
             StdReg::L => rr!(self.reg.l),
             StdReg::HL => {
-                cycles = cycles + 8;
+                cycles += 8;
                 let mut val = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 c = val & 0x01;
                 val = val.rotate_right(1);
@@ -1036,21 +1034,207 @@ mod tests {
     }
 
     #[test]
+    fn ld_n_a() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! ld {
+            ($x:expr, $reg:expr) => {
+                cpu.reg.a = 0xFF;
+                $x = 0xDD;
+                assert_eq!(cpu.ld_n_a($reg), 4);
+                assert_eq!(cpu.reg.a, $x);
+            };
+        }
+
+        ld!(cpu.reg.a, LoadReg::A);
+        ld!(cpu.reg.a, LoadReg::B);
+        ld!(cpu.reg.a, LoadReg::C);
+        ld!(cpu.reg.a, LoadReg::D);
+        ld!(cpu.reg.a, LoadReg::E);
+        ld!(cpu.reg.a, LoadReg::H);
+        ld!(cpu.reg.a, LoadReg::L);
+
+        macro_rules! ldmem {
+            ($reg:expr, $cycles:expr) => {
+                cpu.reg.a = 0xAA;
+                match $reg {
+                    LoadReg::MemBC => cpu.reg.set_bc(0x8100),
+                    LoadReg::MemDE => cpu.reg.set_de(0x8100),
+                    LoadReg::MemHL => cpu.reg.set_hl(0x8100),
+                    LoadReg::MemNN => {
+                        cpu.pc = 0x8500;
+                        cpu.mem.write_byte(cpu.pc + 1, 0x00).unwrap();
+                        cpu.mem.write_byte(cpu.pc + 2, 0x81).unwrap();
+                    }
+                    _ => cpu.reg.a = 0xAA,
+                }
+                cpu.mem.write_byte(0x8100, 0xAA).unwrap();
+                assert_eq!(cpu.ld_n_a($reg), $cycles);
+                assert_eq!(cpu.mem.read_byte(0x8100).unwrap(), 0xAA);
+            };
+        }
+        ldmem!(LoadReg::MemBC, 8);
+        ldmem!(LoadReg::MemDE, 8);
+        ldmem!(LoadReg::MemHL, 8);
+        ldmem!(LoadReg::MemNN, 16);
+    }
+
+    #[test]
+    fn ld_r_r() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+        macro_rules! ld {
+            ($x:expr, $y:expr, $reg1:expr, $reg2:expr) => {
+                $x = 0xDD;
+                $y = 0xFF;
+                assert_eq!(cpu.ld_r_r($reg1, $reg2), 4);
+                assert_eq!($x, $y);
+            };
+        }
+
+        ld!(cpu.reg.b, cpu.reg.b, StdReg::B, StdReg::B);
+        ld!(cpu.reg.b, cpu.reg.c, StdReg::B, StdReg::C);
+        ld!(cpu.reg.b, cpu.reg.d, StdReg::B, StdReg::D);
+        ld!(cpu.reg.b, cpu.reg.e, StdReg::B, StdReg::E);
+        ld!(cpu.reg.b, cpu.reg.h, StdReg::B, StdReg::H);
+        ld!(cpu.reg.b, cpu.reg.l, StdReg::B, StdReg::L);
+        ld!(cpu.reg.c, cpu.reg.b, StdReg::C, StdReg::B);
+        ld!(cpu.reg.c, cpu.reg.c, StdReg::C, StdReg::C);
+        ld!(cpu.reg.c, cpu.reg.d, StdReg::C, StdReg::D);
+        ld!(cpu.reg.c, cpu.reg.e, StdReg::C, StdReg::E);
+        ld!(cpu.reg.c, cpu.reg.h, StdReg::C, StdReg::H);
+        ld!(cpu.reg.c, cpu.reg.l, StdReg::C, StdReg::L);
+        ld!(cpu.reg.d, cpu.reg.b, StdReg::D, StdReg::B);
+        ld!(cpu.reg.d, cpu.reg.c, StdReg::D, StdReg::C);
+        ld!(cpu.reg.d, cpu.reg.d, StdReg::D, StdReg::D);
+        ld!(cpu.reg.d, cpu.reg.e, StdReg::D, StdReg::E);
+        ld!(cpu.reg.d, cpu.reg.h, StdReg::D, StdReg::H);
+        ld!(cpu.reg.d, cpu.reg.l, StdReg::D, StdReg::L);
+        ld!(cpu.reg.e, cpu.reg.b, StdReg::E, StdReg::B);
+        ld!(cpu.reg.e, cpu.reg.c, StdReg::E, StdReg::C);
+        ld!(cpu.reg.e, cpu.reg.d, StdReg::E, StdReg::D);
+        ld!(cpu.reg.e, cpu.reg.e, StdReg::E, StdReg::E);
+        ld!(cpu.reg.e, cpu.reg.h, StdReg::E, StdReg::H);
+        ld!(cpu.reg.e, cpu.reg.l, StdReg::E, StdReg::L);
+        ld!(cpu.reg.h, cpu.reg.b, StdReg::H, StdReg::B);
+        ld!(cpu.reg.h, cpu.reg.c, StdReg::H, StdReg::C);
+        ld!(cpu.reg.h, cpu.reg.d, StdReg::H, StdReg::D);
+        ld!(cpu.reg.h, cpu.reg.e, StdReg::H, StdReg::E);
+        ld!(cpu.reg.h, cpu.reg.h, StdReg::H, StdReg::H);
+        ld!(cpu.reg.h, cpu.reg.l, StdReg::H, StdReg::L);
+        ld!(cpu.reg.l, cpu.reg.b, StdReg::L, StdReg::B);
+        ld!(cpu.reg.l, cpu.reg.c, StdReg::L, StdReg::C);
+        ld!(cpu.reg.l, cpu.reg.d, StdReg::L, StdReg::D);
+        ld!(cpu.reg.l, cpu.reg.e, StdReg::L, StdReg::E);
+        ld!(cpu.reg.l, cpu.reg.h, StdReg::L, StdReg::H);
+        ld!(cpu.reg.l, cpu.reg.l, StdReg::L, StdReg::L);
+
+        macro_rules! ld_r_hl {
+            ($r:expr, $reg:expr) => {
+                $r = 0xAA;
+                cpu.reg.set_hl(0x8100);
+                cpu.mem.write_byte(cpu.reg.get_hl(), 0xAA).unwrap();
+                assert_eq!(cpu.ld_r_r($reg, StdReg::HL), 8);
+                assert_eq!($r, 0xAA);
+            };
+        }
+
+        ld_r_hl!(cpu.reg.b, StdReg::B);
+        ld_r_hl!(cpu.reg.c, StdReg::C);
+        ld_r_hl!(cpu.reg.d, StdReg::D);
+        ld_r_hl!(cpu.reg.e, StdReg::E);
+        ld_r_hl!(cpu.reg.l, StdReg::L);
+        ld_r_hl!(cpu.reg.h, StdReg::H);
+
+        macro_rules! ld_hl_r {
+            ($r:expr, $reg:expr) => {
+                $r = 0xAA;
+                cpu.reg.set_hl(0x8100);
+                assert_eq!(cpu.ld_r_r(StdReg::HL, $reg), 8);
+                assert_eq!(cpu.mem.read_byte(0x8100).unwrap(), 0xAA);
+            };
+        }
+
+        ld_hl_r!(cpu.reg.b, StdReg::B);
+        ld_hl_r!(cpu.reg.c, StdReg::C);
+        ld_hl_r!(cpu.reg.d, StdReg::D);
+        ld_hl_r!(cpu.reg.e, StdReg::E);
+    }
+
+    #[test]
     fn dec_reg() {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
 
-        cpu.reg.unset_z();
-        cpu.reg.unset_n();
-        cpu.reg.a = 0x01;
-        assert_eq!(cpu.dec_reg(StdReg::A), 4);
-        assert_eq!(cpu.reg.a, 0x00);
-        assert_eq!(cpu.reg.is_z(), true);
-        assert_eq!(cpu.reg.is_n(), true);
+        macro_rules! dec {
+            ($r:expr, $reg:expr) => {
+                cpu.reg.unset_z();
+                cpu.reg.unset_h();
+                cpu.reg.unset_n();
+                $r = 0b0111_0000;
+                assert_eq!(cpu.dec_reg($reg), 4);
+                assert_eq!(cpu.reg.a, 111);
+                assert_eq!(cpu.reg.is_z(), false);
+                assert_eq!(cpu.reg.is_h(), true);
+                assert_eq!(cpu.reg.is_n(), true);
+            };
+        }
 
-        cpu.reg.a = 0b0001_0000;
+        dec!(cpu.reg.a, StdReg::A);
+        dec!(cpu.reg.b, StdReg::B);
+        dec!(cpu.reg.c, StdReg::C);
+        dec!(cpu.reg.d, StdReg::D);
+        dec!(cpu.reg.e, StdReg::E);
+        dec!(cpu.reg.h, StdReg::H);
+        dec!(cpu.reg.l, StdReg::L);
+
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.set_n();
+        cpu.reg.a = 0b0000_0001;
         assert_eq!(cpu.dec_reg(StdReg::A), 4);
+        assert_eq!(cpu.reg.a, 0);
+        assert_eq!(cpu.reg.is_z(), true);
+        assert_eq!(cpu.reg.is_h(), false);
+        assert_eq!(cpu.reg.is_n(), true);
+    }
+
+    #[test]
+    fn inc_reg() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! inc {
+            ($r:expr, $reg:expr) => {
+                cpu.reg.unset_z();
+                cpu.reg.unset_h();
+                cpu.reg.set_n();
+                $r = 0b0000_1111;
+                assert_eq!(cpu.inc_reg($reg), 4);
+                assert_eq!($r, 16);
+                assert_eq!(cpu.reg.is_z(), false);
+                assert_eq!(cpu.reg.is_h(), true);
+                assert_eq!(cpu.reg.is_n(), false);
+            };
+        }
+        inc!(cpu.reg.a, StdReg::A);
+        inc!(cpu.reg.b, StdReg::B);
+        inc!(cpu.reg.c, StdReg::C);
+        inc!(cpu.reg.d, StdReg::D);
+        inc!(cpu.reg.e, StdReg::E);
+        inc!(cpu.reg.h, StdReg::H);
+        inc!(cpu.reg.l, StdReg::L);
+
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.set_n();
+        cpu.reg.a = 0b1111_1111;
+        assert_eq!(cpu.inc_reg(StdReg::A), 4);
+        assert_eq!(cpu.reg.a, 0);
+        assert_eq!(cpu.reg.is_z(), true);
         assert_eq!(cpu.reg.is_h(), true);
+        assert_eq!(cpu.reg.is_n(), false);
     }
 
     #[test]
