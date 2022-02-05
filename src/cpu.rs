@@ -1,5 +1,6 @@
 use crate::memorymap::MemoryMap;
 use crate::registers::*;
+use std::{thread, time};
 
 pub struct CpuData {
     pub af: u16,
@@ -75,18 +76,18 @@ impl<'m> Cpu<'m> {
             z: self.reg.is_z(),
             n: self.reg.is_n(),
             h: self.reg.is_h(),
-            c: self.reg.is_carry(),
+            c: self.reg.is_c(),
         }
     }
 
     pub fn step(&mut self) -> u8 {
-        let mut start = 0x8000;
+        /* let mut start = 0x8000;
         for i in 0..10 {
             self.mem.print_tile(start);
             start = start + (i * 16);
-        }
+        } */
         let opcode = self.mem.read_byte(self.pc).unwrap();
-        // println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
+        println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
             0x00 => self.nop(),                 //tested
             0x0F => self.rrca(),                //tested
@@ -113,32 +114,32 @@ impl<'m> Cpu<'m> {
             0x28 => self.jr_cond(FlagCond::Z),
             0x30 => self.jr_cond(FlagCond::NC),
             0x38 => self.jr_cond(FlagCond::C),
-            0x01 => self.ld_n_nn(LoadRegnnn::BC),
-            0x11 => self.ld_n_nn(LoadRegnnn::DE),
-            0x21 => self.ld_n_nn(LoadRegnnn::HL),
-            0x31 => self.ld_n_nn(LoadRegnnn::SP),
-            0x7F => self.ld_a_n(LoadReg::A),     //tested
-            0x78 => self.ld_a_n(LoadReg::B),     //tested
-            0x79 => self.ld_a_n(LoadReg::C),     //tested
-            0x7A => self.ld_a_n(LoadReg::D),     //tested
-            0x7B => self.ld_a_n(LoadReg::E),     //tested
-            0x7C => self.ld_a_n(LoadReg::H),     //tested
-            0x7D => self.ld_a_n(LoadReg::L),     //tested
-            0x0A => self.ld_a_n(LoadReg::MemBC), //tested
-            0x1A => self.ld_a_n(LoadReg::MemDE), //tested
-            0x7E => self.ld_a_n(LoadReg::MemHL), //tested
-            0xFA => self.ld_a_n(LoadReg::MemNN), //tested
-            0x3E => self.ld_a_n(LoadReg::N),     //tested
-            0x47 => self.ld_n_a(LoadReg::B),     //tested
-            0x4F => self.ld_n_a(LoadReg::C),     //tested
-            0x57 => self.ld_n_a(LoadReg::D),     //tested
-            0x5F => self.ld_n_a(LoadReg::E),     //tested
-            0x67 => self.ld_n_a(LoadReg::H),     //tested
-            0x6F => self.ld_n_a(LoadReg::L),     //tested
-            0x02 => self.ld_n_a(LoadReg::MemBC), //tested
-            0x12 => self.ld_n_a(LoadReg::MemDE), //tested
-            0x77 => self.ld_n_a(LoadReg::MemHL), //tested
-            0xEA => self.ld_n_a(LoadReg::MemNN), //tested
+            0x01 => self.ld_n_nn(LoadRegnnn::BC), //tested
+            0x11 => self.ld_n_nn(LoadRegnnn::DE), //tested
+            0x21 => self.ld_n_nn(LoadRegnnn::HL), //tested
+            0x31 => self.ld_n_nn(LoadRegnnn::SP), //tested
+            0x7F => self.ld_a_n(LoadReg::A),      //tested
+            0x78 => self.ld_a_n(LoadReg::B),      //tested
+            0x79 => self.ld_a_n(LoadReg::C),      //tested
+            0x7A => self.ld_a_n(LoadReg::D),      //tested
+            0x7B => self.ld_a_n(LoadReg::E),      //tested
+            0x7C => self.ld_a_n(LoadReg::H),      //tested
+            0x7D => self.ld_a_n(LoadReg::L),      //tested
+            0x0A => self.ld_a_n(LoadReg::MemBC),  //tested
+            0x1A => self.ld_a_n(LoadReg::MemDE),  //tested
+            0x7E => self.ld_a_n(LoadReg::MemHL),  //tested
+            0xFA => self.ld_a_n(LoadReg::MemNN),  //tested
+            0x3E => self.ld_a_n(LoadReg::N),      //tested
+            0x47 => self.ld_n_a(LoadReg::B),      //tested
+            0x4F => self.ld_n_a(LoadReg::C),      //tested
+            0x57 => self.ld_n_a(LoadReg::D),      //tested
+            0x5F => self.ld_n_a(LoadReg::E),      //tested
+            0x67 => self.ld_n_a(LoadReg::H),      //tested
+            0x6F => self.ld_n_a(LoadReg::L),      //tested
+            0x02 => self.ld_n_a(LoadReg::MemBC),  //tested
+            0x12 => self.ld_n_a(LoadReg::MemDE),  //tested
+            0x77 => self.ld_n_a(LoadReg::MemHL),  //tested
+            0xEA => self.ld_n_a(LoadReg::MemNN),  //tested
             0xE0 => self.ld_ff00_a(),
             0xF0 => self.ld_a_ff00(),
             0x40 => self.ld_r_r(StdReg::B, StdReg::B), //tested
@@ -212,8 +213,8 @@ impl<'m> Cpu<'m> {
             0x8B => self.adc_a_n(StdRegN::E),
             0x8C => self.adc_a_n(StdRegN::H),
             0x8D => self.adc_a_n(StdRegN::L),
-            0x8E => self.adc_a_n(StdRegN::HL),
-            0xCE => self.adc_a_n(StdRegN::N),
+            // 0x8E => self.adc_a_n(StdRegN::HL),
+            // 0xCE => self.adc_a_n(StdRegN::N),
             0x3C => self.inc_reg(StdReg::A), //tested
             0x04 => self.inc_reg(StdReg::B), //tested
             0x0C => self.inc_reg(StdReg::C), //tested
@@ -221,7 +222,7 @@ impl<'m> Cpu<'m> {
             0x1C => self.inc_reg(StdReg::E), //tested
             0x24 => self.inc_reg(StdReg::H), //tested
             0x2C => self.inc_reg(StdReg::L), //tested
-            0x34 => self.inc_reg(StdReg::HL),
+            // 0x34 => self.inc_reg(StdReg::HL),
             0xFE => self.cp_a_n(),
 
             0xF3 => {
@@ -403,7 +404,6 @@ impl<'m> Cpu<'m> {
         };
 
         if val.0 == 0x00 {
-            println!("SET ZERO");
             self.reg.set_z();
         } else {
             self.reg.unset_z();
@@ -451,8 +451,7 @@ impl<'m> Cpu<'m> {
         if cond.check(self.reg.f) {
             self.jr();
         } else {
-            self.pc = self.pc.wrapping_add(1);
-            self.pc = self.pc.wrapping_add(1);
+            self.pc = self.pc.wrapping_add(3);
         }
 
         cycles
@@ -774,9 +773,9 @@ impl<'m> Cpu<'m> {
     }
 
     fn rst(&mut self, pc: u16) -> u8 {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let lo = self.mem.read_byte(self.pc).unwrap();
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
         let hi = self.mem.read_byte(self.pc).unwrap();
         self.push(lo, hi);
         self.pc = pc;
@@ -815,7 +814,7 @@ impl<'m> Cpu<'m> {
             ($a:expr) => {{
                 c = $a & 0x01;
                 $a = $a.rotate_right(1);
-                if self.reg.is_carry() {
+                if self.reg.is_c() {
                     $a |= 0x80;
                 } else {
                     $a &= 0x7F;
@@ -836,7 +835,7 @@ impl<'m> Cpu<'m> {
                 let mut val = self.mem.read_byte(self.reg.get_hl()).unwrap();
                 c = val & 0x01;
                 val = val.rotate_right(1);
-                if self.reg.is_carry() {
+                if self.reg.is_c() {
                     val |= 0x80;
                 } else {
                     val &= 0x7F;
@@ -898,22 +897,19 @@ impl<'m> Cpu<'m> {
         let cycles = 4;
 
         let n = self.read_u8();
-        println!("{} - {}", self.reg.a, n);
-        if (self.reg.a & 0xf).wrapping_sub(n & 0xf) & 0x10 == 0x10 {
+        if will_half_borrow(self.reg.a, n) {
             self.reg.set_h();
         }
-
         if self.reg.a.wrapping_sub(n) == 0 {
             self.reg.set_z();
         }
-
         if n > self.reg.a {
             self.reg.set_c();
         }
 
         self.reg.set_n();
 
-        self.pc += self.pc.wrapping_add(1);
+        self.pc = self.pc.wrapping_add(1);
 
         cycles
     }
@@ -983,7 +979,7 @@ mod tests {
         let cycles = cpu.rrca();
 
         assert_eq!(cpu.reg.a, 0b1000_0000);
-        assert_eq!(cpu.reg.is_carry(), true);
+        assert_eq!(cpu.reg.is_c(), true);
         assert_eq!(cycles, 4);
     }
 
@@ -997,7 +993,7 @@ mod tests {
                 $x = 0b0000_0001;
                 assert_eq!(cpu.rr_n($reg), 4);
                 assert_eq!($x, 0b1000_0000);
-                assert_eq!(cpu.reg.is_carry(), true);
+                assert_eq!(cpu.reg.is_c(), true);
             };
         }
         rr!(cpu.reg.a, StdReg::A);
@@ -1048,6 +1044,33 @@ mod tests {
         let cycles = cpu.ld_a_n(LoadReg::MemNN);
         assert_eq!(cycles, 16);
         assert_eq!(cpu.reg.a, 0x00);
+    }
+
+    #[test]
+    fn ld_n_nn() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0xFF).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, 0xAA).unwrap();
+        assert_eq!(cpu.ld_n_nn(LoadRegnnn::BC), 3 * 4);
+        assert_eq!(cpu.reg.get_bc(), 0xAAFF);
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0xFF).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, 0xAA).unwrap();
+        assert_eq!(cpu.ld_n_nn(LoadRegnnn::DE), 3 * 4);
+        assert_eq!(cpu.reg.get_de(), 0xAAFF);
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0xFF).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, 0xAA).unwrap();
+        assert_eq!(cpu.ld_n_nn(LoadRegnnn::HL), 3 * 4);
+        assert_eq!(cpu.reg.get_hl(), 0xAAFF);
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0xFF).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, 0xAA).unwrap();
+        assert_eq!(cpu.ld_n_nn(LoadRegnnn::SP), 3 * 4);
+        assert_eq!(cpu.sp, 0xAAFF);
     }
 
     #[test]
@@ -1445,4 +1468,60 @@ mod tests {
         cpu.reg.set_c();
         call_fail!(FlagCond::NC);
     }
+
+    #[test]
+    fn cp_a_n() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.a = 0b0001_0000;
+        cpu.pc = 0x8100;
+        cpu.mem.write_byte(cpu.pc + 0x0001, 0b0000_0001).unwrap();
+
+        assert_eq!(cpu.cp_a_n(), 4);
+        assert_eq!(cpu.reg.is_h(), true);
+        assert_eq!(cpu.reg.is_n(), true);
+
+        cpu.reg.unset_z();
+        cpu.reg.unset_n();
+        cpu.reg.a = 0b0000_0001;
+        cpu.pc = 0x8100;
+        cpu.mem.write_byte(cpu.pc + 0x0001, 0b0000_0001).unwrap();
+
+        assert_eq!(cpu.cp_a_n(), 4);
+        assert_eq!(cpu.reg.is_z(), true);
+        assert_eq!(cpu.reg.is_n(), true);
+
+        cpu.reg.unset_c();
+        cpu.reg.unset_n();
+        cpu.reg.a = 0b1000_0000;
+        cpu.pc = 0x8100;
+        cpu.mem.write_byte(cpu.pc + 0x0001, 0b1100_0000).unwrap();
+
+        assert_eq!(cpu.cp_a_n(), 4);
+        assert_eq!(cpu.reg.is_c(), true);
+        assert_eq!(cpu.reg.is_n(), true);
+    }
+
+    #[test]
+    fn jr() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        let relative_amt: i16 = -0x000F;
+        let amt = relative_amt.to_le_bytes();
+        let pc = 0x8200;
+
+        cpu.pc = pc;
+        cpu.mem.write_byte(cpu.pc + 1, amt[0]).unwrap();
+        cpu.mem.write_byte(cpu.pc + 1, amt[1]).unwrap();
+
+        assert_eq!(cpu.jr(), 12);
+        assert_eq!(cpu.pc, pc - 3 + 2)
+    }
+
+    #[test]
+    fn jr_cond() {}
 }

@@ -170,12 +170,12 @@ impl Registers {
         self.f & 0b0010_0000 == 0b0010_0000
     }
 
-    pub fn is_carry(&self) -> bool {
+    pub fn is_c(&self) -> bool {
         self.f & 0b0001_0000 == 0b0001_0000
     }
 
     pub fn get_carry(&self) -> u8 {
-        if self.is_carry() {
+        if self.is_c() {
             0x01
         } else {
             0x00
