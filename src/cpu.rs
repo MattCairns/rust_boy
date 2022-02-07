@@ -194,7 +194,8 @@ impl<'m> Cpu<'m> {
             0x2A => self.ldi_a_memhl(),
             0x06 => self.ld_b_n(),
             0x0E => self.ld_c_n(),
-            0x32 => self.ld_mem_hl_a(),
+            0x22 => self.ld_mem_hl_a_inc(),
+            0x32 => self.ld_mem_hl_a_dec(),
             0xC3 => self.jp_nn(),
             0xAF => self.xor_aa(),
             0xC7 => self.rst_00(),        //tested
@@ -215,14 +216,18 @@ impl<'m> Cpu<'m> {
             0x8D => self.adc_a_n(StdRegN::L),
             // 0x8E => self.adc_a_n(StdRegN::HL),
             // 0xCE => self.adc_a_n(StdRegN::N),
-            0x3C => self.inc_reg(StdReg::A), //tested
-            0x04 => self.inc_reg(StdReg::B), //tested
-            0x0C => self.inc_reg(StdReg::C), //tested
-            0x14 => self.inc_reg(StdReg::D), //tested
-            0x1C => self.inc_reg(StdReg::E), //tested
-            0x24 => self.inc_reg(StdReg::H), //tested
-            0x2C => self.inc_reg(StdReg::L), //tested
-            // 0x34 => self.inc_reg(StdReg::HL),
+            0x3C => self.inc_reg(IncDecReg::A), //tested
+            0x04 => self.inc_reg(IncDecReg::B), //tested
+            0x0C => self.inc_reg(IncDecReg::C), //tested
+            0x14 => self.inc_reg(IncDecReg::D), //tested
+            0x1C => self.inc_reg(IncDecReg::E), //tested
+            0x24 => self.inc_reg(IncDecReg::H), //tested
+            0x2C => self.inc_reg(IncDecReg::L), //tested
+            0x23 => self.inc_reg(IncDecReg::HL),
+            0x03 => self.inc_reg(IncDecReg::BC),
+            0x13 => self.inc_reg(IncDecReg::DE),
+            0x33 => self.inc_reg(IncDecReg::SP),
+            0x34 => self.inc_reg(IncDecReg::MemHL),
             0xFE => self.cp_a_n(),
 
             0xF3 => {
@@ -306,56 +311,61 @@ impl<'m> Cpu<'m> {
         cycles
     }
 
-    fn inc_reg(&mut self, reg: StdReg) -> u8 {
-        let cycles = 4;
-        let val: (u8, bool) = match reg {
-            StdReg::A => {
-                let inc = inc(self.reg.a, 0x01);
-                self.reg.a = inc.0;
-                inc
+    fn inc_reg(&mut self, reg: IncDecReg) -> u8 {
+        let mut cycles = 4;
+
+        macro_rules! inc {
+            ($a:expr) => {{
+                if will_half_carry($a, 1) {
+                    self.reg.set_h();
+                }
+                $a = $a.wrapping_add(1);
+                if $a == 0x00 {
+                    self.reg.set_z();
+                }
+                self.reg.unset_n();
+            }};
+        }
+
+        match reg {
+            IncDecReg::A => inc!(self.reg.a),
+            IncDecReg::B => inc!(self.reg.b),
+            IncDecReg::C => inc!(self.reg.c),
+            IncDecReg::D => inc!(self.reg.d),
+            IncDecReg::E => inc!(self.reg.e),
+            IncDecReg::H => inc!(self.reg.h),
+            IncDecReg::L => inc!(self.reg.l),
+            IncDecReg::HL => {
+                cycles = 8;
+                self.reg.set_hl(self.reg.get_hl().wrapping_add(1));
             }
-            StdReg::B => {
-                let inc = inc(self.reg.b, 0x01);
-                self.reg.b = inc.0;
-                inc
+            IncDecReg::BC => {
+                cycles = 8;
+                self.reg.set_bc(self.reg.get_bc().wrapping_add(1));
             }
-            StdReg::C => {
-                let inc = inc(self.reg.c, 0x01);
-                self.reg.c = inc.0;
-                inc
+            IncDecReg::DE => {
+                cycles = 8;
+                self.reg.set_de(self.reg.get_de().wrapping_add(1));
             }
-            StdReg::D => {
-                let inc = inc(self.reg.d, 0x01);
-                self.reg.d = inc.0;
-                inc
+            IncDecReg::SP => {
+                cycles = 8;
+                self.sp = self.sp.wrapping_add(1)
             }
-            StdReg::E => {
-                let inc = inc(self.reg.e, 0x01);
-                self.reg.e = inc.0;
-                inc
+            IncDecReg::MemHL => {
+                cycles = 12;
+                let loc = self.read_u16();
+                let v: u8 = self.mem.read_byte(loc).unwrap();
+
+                if will_half_carry(v, 1) {
+                    self.reg.set_h();
+                }
+                self.mem.write_byte(loc, v.wrapping_add(1)).unwrap();
+                if v.wrapping_add(1) == 0x00 {
+                    self.reg.set_z();
+                }
+                self.reg.unset_n();
             }
-            StdReg::H => {
-                let inc = inc(self.reg.h, 0x01);
-                self.reg.h = inc.0;
-                inc
-            }
-            StdReg::L => {
-                let inc = inc(self.reg.l, 0x01);
-                self.reg.l = inc.0;
-                inc
-            }
-            StdReg::HL => todo!(),
         };
-
-        if val.0 == 0x00 {
-            self.reg.set_z();
-        }
-
-        if val.1 {
-            self.reg.set_h();
-        }
-
-        self.reg.unset_n();
 
         self.pc = self.pc.wrapping_add(1);
 
@@ -423,9 +433,7 @@ impl<'m> Cpu<'m> {
 
     fn jr(&mut self) -> u8 {
         let cycles = 12;
-        self.pc = self.pc.wrapping_add(1);
-        let v = self.mem.read_byte(self.pc).unwrap();
-        self.pc = self.pc.wrapping_add(1);
+        let v = self.read_u8();
 
         let sig: u16;
         let is_neg: bool;
@@ -439,9 +447,9 @@ impl<'m> Cpu<'m> {
         }
 
         if is_neg {
-            self.pc -= sig;
+            self.pc -= sig - 1;
         } else {
-            self.pc += sig;
+            self.pc += sig - 1;
         }
 
         cycles
@@ -649,10 +657,24 @@ impl<'m> Cpu<'m> {
         println!("LD [HL-] A");
         println!("{:#6X?}", self.reg.get_hl());
         self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
-        self.reg.set_hl(self.reg.get_hl().overflowing_sub(1).0);
         self.pc = self.pc.wrapping_add(1);
 
         8
+    }
+
+
+    fn ld_mem_hl_a_dec(&mut self) -> u8 {
+        let cycles = self.ld_mem_hl_a();
+        self.reg.set_hl(self.reg.get_hl().overflowing_sub(1).0);
+
+        cycles
+    }
+
+    fn ld_mem_hl_a_inc(&mut self) -> u8 {
+        let cycles = self.ld_mem_hl_a();
+        self.reg.set_hl(self.reg.get_hl().overflowing_add(1).0);
+
+        cycles
     }
 
     fn ld_a_n(&mut self, reg: LoadReg) -> u8 {
@@ -721,13 +743,8 @@ impl<'m> Cpu<'m> {
             }
             LoadReg::MemNN => {
                 cycles = 16;
-                self.pc = self.pc.wrapping_add(1);
-                let low = self.mem.read_byte(self.pc).unwrap();
-                self.pc = self.pc.wrapping_add(1);
-                let high = self.mem.read_byte(self.pc).unwrap();
-                self.mem
-                    .write_byte(self.reg.get_nn(low, high), self.reg.a)
-                    .unwrap();
+                let v = self.read_u16();
+                self.mem.write_byte(v, self.reg.a).unwrap();
             }
             LoadReg::N => (),
         };
@@ -1258,23 +1275,39 @@ mod tests {
                 assert_eq!(cpu.reg.is_n(), false);
             };
         }
-        inc!(cpu.reg.a, StdReg::A);
-        inc!(cpu.reg.b, StdReg::B);
-        inc!(cpu.reg.c, StdReg::C);
-        inc!(cpu.reg.d, StdReg::D);
-        inc!(cpu.reg.e, StdReg::E);
-        inc!(cpu.reg.h, StdReg::H);
-        inc!(cpu.reg.l, StdReg::L);
+        inc!(cpu.reg.a, IncDecReg::A);
+        inc!(cpu.reg.b, IncDecReg::B);
+        inc!(cpu.reg.c, IncDecReg::C);
+        inc!(cpu.reg.d, IncDecReg::D);
+        inc!(cpu.reg.e, IncDecReg::E);
+        inc!(cpu.reg.h, IncDecReg::H);
+        inc!(cpu.reg.l, IncDecReg::L);
 
         cpu.reg.unset_z();
         cpu.reg.unset_h();
         cpu.reg.set_n();
         cpu.reg.a = 0b1111_1111;
-        assert_eq!(cpu.inc_reg(StdReg::A), 4);
+        assert_eq!(cpu.inc_reg(IncDecReg::A), 4);
         assert_eq!(cpu.reg.a, 0);
         assert_eq!(cpu.reg.is_z(), true);
         assert_eq!(cpu.reg.is_h(), true);
         assert_eq!(cpu.reg.is_n(), false);
+
+        cpu.reg.set_bc(0x0FFF);
+        assert_eq!(cpu.inc_reg(IncDecReg::BC), 8);
+        assert_eq!(cpu.reg.get_bc(), 0x0FFF + 1);
+
+        cpu.reg.set_hl(0x0FFF);
+        assert_eq!(cpu.inc_reg(IncDecReg::HL), 8);
+        assert_eq!(cpu.reg.get_hl(), 0x0FFF + 1);
+
+        cpu.reg.set_de(0x0FFF);
+        assert_eq!(cpu.inc_reg(IncDecReg::DE), 8);
+        assert_eq!(cpu.reg.get_de(), 0x0FFF + 1);
+
+        cpu.sp = 0x0FFF;
+        assert_eq!(cpu.inc_reg(IncDecReg::SP), 8);
+        assert_eq!(cpu.sp, 0x0FFF + 0x0001);
     }
 
     #[test]
@@ -1510,16 +1543,16 @@ mod tests {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
 
-        let relative_amt: i16 = -0x000F;
+        let relative_amt: i16 = -0x000A;
         let amt = relative_amt.to_le_bytes();
         let pc = 0x8200;
 
         cpu.pc = pc;
         cpu.mem.write_byte(cpu.pc + 1, amt[0]).unwrap();
-        cpu.mem.write_byte(cpu.pc + 1, amt[1]).unwrap();
+        cpu.mem.write_byte(cpu.pc + 2, amt[1]).unwrap();
 
         assert_eq!(cpu.jr(), 12);
-        assert_eq!(cpu.pc, pc - 3 + 2)
+        assert_eq!(cpu.pc, pc - 0x000A + 2)
     }
 
     #[test]

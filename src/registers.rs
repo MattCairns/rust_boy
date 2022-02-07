@@ -24,6 +24,22 @@ pub enum StdReg {
 }
 
 #[derive(Debug)]
+pub enum IncDecReg {
+    A,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+    HL,
+    BC,
+    DE,
+    SP,
+    MemHL,
+}
+
+#[derive(Debug)]
 pub enum LoadReg {
     A,
     B,
@@ -265,13 +281,17 @@ pub fn clear_flag(flag: u8, pos: u32) -> u8 {
 /// ```
 /// use rust_boy::registers::will_half_carry;
 ///
-/// let v1 = 0b00001000;
-/// let v2 = 0b00001000;
+/// let v1 = 0b0000_1000;
+/// let v2 = 0b0000_1000;
 /// assert_eq!(will_half_carry(v1, v2), true);
 ///
-/// let v1 = 0b00000000;
-/// let v2 = 0b00000000;
+/// let v1 = 0b0000_0000;
+/// let v2 = 0b0000_0000;
 /// assert_eq!(will_half_carry(v1, v2), false);
+///
+/// let v1 = 0b0000_1111;
+/// let v2 = 0b0000_0001;
+/// assert_eq!(will_half_carry(v1, v2), true);
 /// ```
 pub fn will_half_carry(v1: u8, v2: u8) -> bool {
     (v1 & 0xf).wrapping_add(v2 & 0xf) & 0x10 == 0x10
@@ -319,8 +339,4 @@ pub fn will_carry(v1: u8, v2: u8) -> bool {
 
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
     (value.wrapping_sub(amt), will_half_borrow(value, amt))
-}
-
-pub fn inc(value: u8, amt: u8) -> (u8, bool) {
-    (value.wrapping_add(amt), will_half_carry(value, amt))
 }
