@@ -17,9 +17,9 @@ fn main() {
     // LOAD CARTRIDGE
     let rom_path = "roms/tetris.gb";
     let cartridge = Cartridge::load(rom_path);
-    let mut memmap = MemoryMap::default();
+    let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
-    let mut cpu = Cpu::load(&mut memmap);
+    let mut cpu = Cpu::load(&memmap);
 
     // SETUP SDL2
     let sdl_context = sdl2::init().unwrap();

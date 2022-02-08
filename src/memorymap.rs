@@ -1,27 +1,29 @@
 use crate::cartridge::Cartridge;
 use crate::tile::Tile;
 use std::io;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct MemoryMap {
-    memory: [u8; 0xFFFF + 1],
+    memory: Rc<RefCell<[u8; 0xFFFF + 1]>>,
 }
 
 impl Default for MemoryMap {
     fn default() -> MemoryMap {
         MemoryMap {
-            memory: [0; 0xFFFF + 1],
+            memory: Rc::new(RefCell::new([0; 0xFFFF + 1])),
         }
     }
 }
 
 impl MemoryMap {
-    pub fn load_cartridge(&mut self, cartridge: &Cartridge) {
+    pub fn load_cartridge(&self, cartridge: &Cartridge) {
         println!("Cartridge size: {}", cartridge.data.len());
-        (0..self.memory.len()).for_each(|pos| {
+        (0..0xFFFF).for_each(|pos| {
             if pos >= cartridge.data.len() {
-                self.memory[pos] = 0x00;
+                self.memory.borrow_mut()[pos] = 0x00;
             } else {
-                self.memory[pos] = cartridge.data[pos];
+                self.memory.borrow_mut()[pos] = cartridge.data[pos];
             };
         });
     }
@@ -33,11 +35,11 @@ impl MemoryMap {
                 "Cannot read from out of bounds memory.",
             ))
         } else {
-            Ok(self.memory[pos as usize])
+            Ok(self.memory.borrow_mut()[pos as usize])
         }
     }
 
-    pub fn write_byte(&mut self, pos: u16, byte: u8) -> Result<u8, io::Error> {
+    pub fn write_byte(&self, pos: u16, byte: u8) -> Result<u8, io::Error> {
         if pos < MemSectors::RomBank1.val() {
             println!("\x1b[91mCan't {:#4X?} to [{:#6X?}]\x1b[0m", byte, pos);
             Err(io::Error::new(
@@ -46,12 +48,12 @@ impl MemoryMap {
             ))
         } else {
             println!("\x1b[92mWriting {:#4X?} to [{:#6X?}]\x1b[0m", byte, pos);
-            self.memory[pos as usize] = byte;
+            self.memory.borrow_mut()[pos as usize] = byte;
             Ok(byte)
         }
     }
 
-    pub fn print_tile(&mut self, pos: u16) {
+    pub fn print_tile(&self, pos: u16) {
         let mut t: Vec<u8> = Vec::new();
         for i in 0..16 {
             t.push(self.read_byte(pos + i).unwrap())

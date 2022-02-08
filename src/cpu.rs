@@ -19,11 +19,11 @@ pub struct Cpu<'m> {
     reg: Registers,
     sp: u16,
     pc: u16,
-    mem: &'m mut MemoryMap,
+    mem: &'m MemoryMap,
 }
 
 impl<'m> Cpu<'m> {
-    pub fn load(mem: &'m mut MemoryMap) -> Self {
+    pub fn load(mem: &'m MemoryMap) -> Self {
         // Load the state of the gameboy after
         // loading the boot rom.
         mem.write_byte(0xFF05, 0x00).unwrap();
