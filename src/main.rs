@@ -15,7 +15,7 @@ use std::{thread, time};
 
 fn main() {
     // LOAD CARTRIDGE
-    let rom_path = "roms/tetris.gb";
+    let rom_path = "roms/drmario.gb";
     let cartridge = Cartridge::load(rom_path);
     let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
@@ -53,82 +53,90 @@ fn main() {
     let mut quit = false;
     let mut slider = 0.0;
 
-    let _iters = 10000;
-    let mut i = 100;
+    let iters = 1000;
+    let mut i = 0;
 
     let start_time = Instant::now();
     // GAME LOOP
     'running: loop {
         let mut cpu_data = cpu.get_cpu_data();
 
-        /* if enable_vsync {
-                   window
-                       .subsystem()
-                       .gl_set_swap_interval(SwapInterval::VSync)
-                       .unwrap()
-               } else {
-                   window
-                       .subsystem()
-                       .gl_set_swap_interval(SwapInterval::Immediate)
-                       .unwrap()
-               }
+        if enable_vsync {
+            window
+                .subsystem()
+                .gl_set_swap_interval(SwapInterval::VSync)
+                .unwrap()
+        } else {
+            window
+                .subsystem()
+                .gl_set_swap_interval(SwapInterval::Immediate)
+                .unwrap()
+        }
 
-               egui_state.input.time = Some(start_time.elapsed().as_secs_f64());
-               egui_ctx.begin_frame(egui_state.input.take());
+        egui_state.input.time = Some(start_time.elapsed().as_secs_f64());
+        egui_ctx.begin_frame(egui_state.input.take());
 
-               egui::CentralPanel::default().show(&egui_ctx, |ui| {
-                   ui.horizontal(|ui| {
-                       ui.label("AF: ");
-                       ui.label(format!("{:#6X}", cpu_data.af));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("BC: ");
-                       ui.label(format!("{:#6X}", cpu_data.bc));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("DE: ");
-                       ui.label(format!("{:#6X}", cpu_data.de));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("HL: ");
-                       ui.label(format!("{:#6X}", cpu_data.hl));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("SP: ");
-                       ui.label(format!("{:#6X}", cpu_data.sp));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("PC: ");
-                       ui.label(format!("{:#6X}", cpu_data.pc));
-                   });
-                   ui.horizontal(|ui| {
-                       ui.label("Z: ");
-                       ui.add(Checkbox::new(&mut cpu_data.z, ""));
-                       ui.label("N: ");
-                       ui.add(Checkbox::new(&mut cpu_data.n, ""));
-                       ui.label("H: ");
-                       ui.add(Checkbox::new(&mut cpu_data.h, ""));
-                       ui.label("C: ");
-                       ui.add(Checkbox::new(&mut cpu_data.c, ""));
-                   });
+        egui::CentralPanel::default().show(&egui_ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("AF: ");
+                ui.label(format!("{:#6X}", cpu_data.af));
+            });
+            ui.horizontal(|ui| {
+                ui.label("BC: ");
+                ui.label(format!("{:#6X}", cpu_data.bc));
+            });
+            ui.horizontal(|ui| {
+                ui.label("DE: ");
+                ui.label(format!("{:#6X}", cpu_data.de));
+            });
+            ui.horizontal(|ui| {
+                ui.label("HL: ");
+                ui.label(format!("{:#6X}", cpu_data.hl));
+            });
+            ui.horizontal(|ui| {
+                ui.label("SP: ");
+                ui.label(format!("{:#6X}", cpu_data.sp));
+            });
+            ui.horizontal(|ui| {
+                ui.label("PC: ");
+                ui.label(format!("{:#6X}", cpu_data.pc));
+            });
+            ui.horizontal(|ui| {
+                ui.label("Z: ");
+                ui.add(Checkbox::new(&mut cpu_data.z, ""));
+                ui.label("N: ");
+                ui.add(Checkbox::new(&mut cpu_data.n, ""));
+                ui.label("H: ");
+                ui.add(Checkbox::new(&mut cpu_data.h, ""));
+                ui.label("C: ");
+                ui.add(Checkbox::new(&mut cpu_data.c, ""));
+            });
 
-                   if ui.button("STEP").clicked() {
-                       // cpu.step();
-                       i = 0;
-                   }
-                   ui.separator();
-                   ui.add(egui::Slider::new(&mut slider, 0.0..=50.0).text("Slider"));
-                   ui.add(Checkbox::new(&mut enable_vsync, "Enable vsync?"));
-                   ui.separator();
-                   if ui.button("Quit?").clicked() {
-                       quit = true;
-                   }
-               });
-        */
-        cpu.step();
+            if ui.button("STEP").clicked() {
+                cpu.step();
+                i = 0;
+            }
+            ui.separator();
+            ui.add(egui::Slider::new(&mut slider, 0.0..=50.0).text("Slider"));
+            ui.add(Checkbox::new(&mut enable_vsync, "Enable vsync?"));
+            ui.separator();
+            if ui.button("Quit?").clicked() {
+                quit = true;
+            }
+        });
 
-        thread::sleep(time::Duration::from_nanos(239));
+        if i < iters {
+            cpu.step();
+            i += 1;
+        }
         /*
+        let mut start = 0x0100;
+        for i in 0..10 {
+            memmap.print_tile(start);
+            start = start + (i * 16);
+        } */
+        // thread::sleep(time::Duration::from_nanos(239));
+
         let (egui_output, paint_cmds) = egui_ctx.end_frame();
         // Process ouput
         egui_state.process_output(&window, &egui_output);
@@ -154,7 +162,7 @@ fn main() {
 
         if quit {
             break;
-        } */
+        }
     }
 
     /* let header = Header::new(&cartridge.data);

@@ -89,147 +89,159 @@ impl<'m> Cpu<'m> {
         let opcode = self.mem.read_byte(self.pc).unwrap();
         println!("[{:#06X?}] {:#04X?}", self.pc, opcode);
         match opcode {
-            0x00 => self.nop(),                 //tested
-            0x0F => self.rrca(),                //tested
-            0xC9 => self.ret(),                 //tested
-            0xC0 => self.ret_cc(FlagCond::NZ),  //tested
-            0xC8 => self.ret_cc(FlagCond::Z),   //tested
-            0xD0 => self.ret_cc(FlagCond::NC),  //tested
-            0xD8 => self.ret_cc(FlagCond::C),   //tested
-            0xCD => self.call(),                //tested
-            0xC4 => self.call_cc(FlagCond::NZ), //tested
-            0xCC => self.call_cc(FlagCond::Z),  //tested
-            0xD4 => self.call_cc(FlagCond::NC), //tested
-            0xDC => self.call_cc(FlagCond::C),  //tested
-            0xE5 => self.push_hl(),
-            0x3D => self.dec_reg(StdReg::A), //tested
-            0x05 => self.dec_reg(StdReg::B), //tested
-            0x0D => self.dec_reg(StdReg::C), //tested
-            0x15 => self.dec_reg(StdReg::D), //tested
-            0x1D => self.dec_reg(StdReg::E), //tested
-            0x25 => self.dec_reg(StdReg::H), //tested
-            0x2D => self.dec_reg(StdReg::L), //tested
-            0x18 => self.jr(),
-            0x20 => self.jr_cond(FlagCond::NZ),
-            0x28 => self.jr_cond(FlagCond::Z),
-            0x30 => self.jr_cond(FlagCond::NC),
-            0x38 => self.jr_cond(FlagCond::C),
-            0x01 => self.ld_n_nn(LoadRegnnn::BC), //tested
-            0x11 => self.ld_n_nn(LoadRegnnn::DE), //tested
+            0x00 => self.nop(), //tested
+            // 0x0F => self.rrca(),                //tested
+            // 0xC9 => self.ret(),                 //tested
+            // 0xC0 => self.ret_cc(FlagCond::NZ),  //tested
+            // 0xC8 => self.ret_cc(FlagCond::Z),   //tested
+            // 0xD0 => self.ret_cc(FlagCond::NC),  //tested
+            // 0xD8 => self.ret_cc(FlagCond::C),   //tested
+            // 0xCD => self.call(),                //tested
+            // 0xC4 => self.call_cc(FlagCond::NZ), //tested
+            // 0xCC => self.call_cc(FlagCond::Z),  //tested
+            // 0xD4 => self.call_cc(FlagCond::NC), //tested
+            // 0xDC => self.call_cc(FlagCond::C),  //tested
+            // 0xE5 => self.push_hl(),
+            // 0x3D => self.dec_r(StdReg::A), //tested
+            // 0x05 => self.dec_r(StdReg::B), //tested
+            // 0x0D => self.dec_r(StdReg::C), //tested
+            // 0x15 => self.dec_r(StdReg::D), //tested
+            // 0x1D => self.dec_r(StdReg::E), //tested
+            // 0x25 => self.dec_r(StdReg::H), //tested
+            // 0x2D => self.dec_r(StdReg::L), //tested
+            // 0xB8 => self.cp_a_r(StdReg::A),
+            // 0xB9 => self.cp_a_r(StdReg::B),
+            // 0xBA => self.cp_a_r(StdReg::C),
+            // 0xBB => self.cp_a_r(StdReg::D),
+            // 0xBC => self.cp_a_r(StdReg::E),
+            // 0xBD => self.cp_a_r(StdReg::H),
+            // 0xBF => self.cp_a_r(StdReg::L),
+            // 0x18 => self.jr(),
+            // 0x20 => self.jr_cond(FlagCond::NZ),
+            // 0x28 => self.jr_cond(FlagCond::Z),
+            // 0x30 => self.jr_cond(FlagCond::NC),
+            // 0x38 => self.jr_cond(FlagCond::C),
+            // 0x01 => self.ld_n_nn(LoadRegnnn::BC), //tested
+            // 0x11 => self.ld_n_nn(LoadRegnnn::DE), //tested
             0x21 => self.ld_n_nn(LoadRegnnn::HL), //tested
-            0x31 => self.ld_n_nn(LoadRegnnn::SP), //tested
-            0x7F => self.ld_a_n(LoadReg::A),      //tested
-            0x78 => self.ld_a_n(LoadReg::B),      //tested
-            0x79 => self.ld_a_n(LoadReg::C),      //tested
-            0x7A => self.ld_a_n(LoadReg::D),      //tested
-            0x7B => self.ld_a_n(LoadReg::E),      //tested
-            0x7C => self.ld_a_n(LoadReg::H),      //tested
-            0x7D => self.ld_a_n(LoadReg::L),      //tested
-            0x0A => self.ld_a_n(LoadReg::MemBC),  //tested
-            0x1A => self.ld_a_n(LoadReg::MemDE),  //tested
-            0x7E => self.ld_a_n(LoadReg::MemHL),  //tested
-            0xFA => self.ld_a_n(LoadReg::MemNN),  //tested
-            0x3E => self.ld_a_n(LoadReg::N),      //tested
-            0x47 => self.ld_n_a(LoadReg::B),      //tested
-            0x4F => self.ld_n_a(LoadReg::C),      //tested
-            0x57 => self.ld_n_a(LoadReg::D),      //tested
-            0x5F => self.ld_n_a(LoadReg::E),      //tested
-            0x67 => self.ld_n_a(LoadReg::H),      //tested
-            0x6F => self.ld_n_a(LoadReg::L),      //tested
-            0x02 => self.ld_n_a(LoadReg::MemBC),  //tested
-            0x12 => self.ld_n_a(LoadReg::MemDE),  //tested
-            0x77 => self.ld_n_a(LoadReg::MemHL),  //tested
-            0xEA => self.ld_n_a(LoadReg::MemNN),  //tested
-            0xE0 => self.ld_ff00_a(),
-            0xF0 => self.ld_a_ff00(),
-            0x40 => self.ld_r_r(StdReg::B, StdReg::B), //tested
-            0x41 => self.ld_r_r(StdReg::B, StdReg::C), //tested
-            0x42 => self.ld_r_r(StdReg::B, StdReg::D), //tested
-            0x43 => self.ld_r_r(StdReg::B, StdReg::E), //tested
-            0x44 => self.ld_r_r(StdReg::B, StdReg::H), //tested
-            0x45 => self.ld_r_r(StdReg::B, StdReg::L), //tested
-            0x46 => self.ld_r_r(StdReg::B, StdReg::HL), //tested
-            0x48 => self.ld_r_r(StdReg::C, StdReg::B), //tested
-            0x49 => self.ld_r_r(StdReg::C, StdReg::C), //tested
-            0x4A => self.ld_r_r(StdReg::C, StdReg::D), //tested
-            0x4B => self.ld_r_r(StdReg::C, StdReg::E), //tested
-            0x4C => self.ld_r_r(StdReg::C, StdReg::H), //tested
-            0x4D => self.ld_r_r(StdReg::C, StdReg::L), //tested
-            0x4E => self.ld_r_r(StdReg::C, StdReg::HL), //tested
-            0x50 => self.ld_r_r(StdReg::D, StdReg::B), //tested
-            0x51 => self.ld_r_r(StdReg::D, StdReg::C), //tested
-            0x52 => self.ld_r_r(StdReg::D, StdReg::D), //tested
-            0x53 => self.ld_r_r(StdReg::D, StdReg::E), //tested
-            0x54 => self.ld_r_r(StdReg::D, StdReg::H), //tested
-            0x55 => self.ld_r_r(StdReg::D, StdReg::L), //tested
-            0x56 => self.ld_r_r(StdReg::D, StdReg::HL), //tested
-            0x58 => self.ld_r_r(StdReg::E, StdReg::B), //tested
-            0x59 => self.ld_r_r(StdReg::E, StdReg::C), //tested
-            0x5A => self.ld_r_r(StdReg::E, StdReg::D), //tested
-            0x5B => self.ld_r_r(StdReg::E, StdReg::E), //tested
-            0x5C => self.ld_r_r(StdReg::E, StdReg::H), //tested
-            0x5D => self.ld_r_r(StdReg::E, StdReg::L), //tested
-            0x5E => self.ld_r_r(StdReg::E, StdReg::HL), //tested
-            0x60 => self.ld_r_r(StdReg::H, StdReg::B), //tested
-            0x61 => self.ld_r_r(StdReg::H, StdReg::C), //tested
-            0x62 => self.ld_r_r(StdReg::H, StdReg::D), //tested
-            0x63 => self.ld_r_r(StdReg::H, StdReg::E), //tested
-            0x64 => self.ld_r_r(StdReg::H, StdReg::H), //tested
-            0x65 => self.ld_r_r(StdReg::H, StdReg::L), //tested
-            0x66 => self.ld_r_r(StdReg::H, StdReg::HL), //tested
-            0x68 => self.ld_r_r(StdReg::L, StdReg::B), //tested
-            0x69 => self.ld_r_r(StdReg::L, StdReg::C), //tested
-            0x6A => self.ld_r_r(StdReg::L, StdReg::D), //tested
-            0x6B => self.ld_r_r(StdReg::L, StdReg::E), //tested
-            0x6C => self.ld_r_r(StdReg::L, StdReg::H), //tested
-            0x6D => self.ld_r_r(StdReg::L, StdReg::L), //tested
-            0x6E => self.ld_r_r(StdReg::L, StdReg::HL), //tested
-            0x70 => self.ld_r_r(StdReg::HL, StdReg::B), //tested
-            0x71 => self.ld_r_r(StdReg::HL, StdReg::C), //tested
-            0x72 => self.ld_r_r(StdReg::HL, StdReg::D), //tested
-            0x73 => self.ld_r_r(StdReg::HL, StdReg::E), //tested
-            0x74 => self.ld_r_r(StdReg::HL, StdReg::H), //tested
-            0x75 => self.ld_r_r(StdReg::HL, StdReg::L), //tested
-            0x36 => self.ld_r_r(StdReg::HL, StdReg::HL), //tested
-            0x2A => self.ldi_a_memhl(),
-            0x06 => self.ld_b_n(),
+            // 0x31 => self.ld_n_nn(LoadRegnnn::SP), //tested
+            // 0x7F => self.ld_a_n(LoadReg::A),      //tested
+            // 0x78 => self.ld_a_n(LoadReg::B),      //tested
+            // 0x79 => self.ld_a_n(LoadReg::C),      //tested
+            // 0x7A => self.ld_a_n(LoadReg::D),      //tested
+            // 0x7B => self.ld_a_n(LoadReg::E),      //tested
+            // 0x7C => self.ld_a_n(LoadReg::H),      //tested
+            // 0x7D => self.ld_a_n(LoadReg::L),      //tested
+            // 0x0A => self.ld_a_n(LoadReg::MemBC),  //tested
+            // 0x1A => self.ld_a_n(LoadReg::MemDE),  //tested
+            // 0x7E => self.ld_a_n(LoadReg::MemHL),  //tested
+            // 0xFA => self.ld_a_n(LoadReg::MemNN),  //tested
+            // 0x3E => self.ld_a_n(LoadReg::N),      //tested
+            // 0x47 => self.ld_n_a(LoadReg::B),      //tested
+            // 0x4F => self.ld_n_a(LoadReg::C),      //tested
+            // 0x57 => self.ld_n_a(LoadReg::D),      //tested
+            // 0x5F => self.ld_n_a(LoadReg::E),      //tested
+            // 0x67 => self.ld_n_a(LoadReg::H),      //tested
+            // 0x6F => self.ld_n_a(LoadReg::L),      //tested
+            // 0x02 => self.ld_n_a(LoadReg::MemBC),  //tested
+            // 0x12 => self.ld_n_a(LoadReg::MemDE),  //tested
+            // 0x77 => self.ld_n_a(LoadReg::MemHL),  //tested
+            // 0xEA => self.ld_n_a(LoadReg::MemNN),  //tested
+            // 0xE0 => self.ld_ff00_a(),
+            // 0xF0 => self.ld_a_ff00(),
+            // 0x40 => self.ld_r_r(StdReg::B, StdReg::B), //tested
+            // 0x41 => self.ld_r_r(StdReg::B, StdReg::C), //tested
+            // 0x42 => self.ld_r_r(StdReg::B, StdReg::D), //tested
+            // 0x43 => self.ld_r_r(StdReg::B, StdReg::E), //tested
+            // 0x44 => self.ld_r_r(StdReg::B, StdReg::H), //tested
+            // 0x45 => self.ld_r_r(StdReg::B, StdReg::L), //tested
+            // 0x46 => self.ld_r_r(StdReg::B, StdReg::HL), //tested
+            // 0x48 => self.ld_r_r(StdReg::C, StdReg::B), //tested
+            // 0x49 => self.ld_r_r(StdReg::C, StdReg::C), //tested
+            // 0x4A => self.ld_r_r(StdReg::C, StdReg::D), //tested
+            // 0x4B => self.ld_r_r(StdReg::C, StdReg::E), //tested
+            // 0x4C => self.ld_r_r(StdReg::C, StdReg::H), //tested
+            // 0x4D => self.ld_r_r(StdReg::C, StdReg::L), //tested
+            // 0x4E => self.ld_r_r(StdReg::C, StdReg::HL), //tested
+            // 0x50 => self.ld_r_r(StdReg::D, StdReg::B), //tested
+            // 0x51 => self.ld_r_r(StdReg::D, StdReg::C), //tested
+            // 0x52 => self.ld_r_r(StdReg::D, StdReg::D), //tested
+            // 0x53 => self.ld_r_r(StdReg::D, StdReg::E), //tested
+            // 0x54 => self.ld_r_r(StdReg::D, StdReg::H), //tested
+            // 0x55 => self.ld_r_r(StdReg::D, StdReg::L), //tested
+            // 0x56 => self.ld_r_r(StdReg::D, StdReg::HL), //tested
+            // 0x58 => self.ld_r_r(StdReg::E, StdReg::B), //tested
+            // 0x59 => self.ld_r_r(StdReg::E, StdReg::C), //tested
+            // 0x5A => self.ld_r_r(StdReg::E, StdReg::D), //tested
+            // 0x5B => self.ld_r_r(StdReg::E, StdReg::E), //tested
+            // 0x5C => self.ld_r_r(StdReg::E, StdReg::H), //tested
+            // 0x5D => self.ld_r_r(StdReg::E, StdReg::L), //tested
+            // 0x5E => self.ld_r_r(StdReg::E, StdReg::HL), //tested
+            // 0x60 => self.ld_r_r(StdReg::H, StdReg::B), //tested
+            // 0x61 => self.ld_r_r(StdReg::H, StdReg::C), //tested
+            // 0x62 => self.ld_r_r(StdReg::H, StdReg::D), //tested
+            // 0x63 => self.ld_r_r(StdReg::H, StdReg::E), //tested
+            // 0x64 => self.ld_r_r(StdReg::H, StdReg::H), //tested
+            // 0x65 => self.ld_r_r(StdReg::H, StdReg::L), //tested
+            // 0x66 => self.ld_r_r(StdReg::H, StdReg::HL), //tested
+            // 0x68 => self.ld_r_r(StdReg::L, StdReg::B), //tested
+            // 0x69 => self.ld_r_r(StdReg::L, StdReg::C), //tested
+            // 0x6A => self.ld_r_r(StdReg::L, StdReg::D), //tested
+            // 0x6B => self.ld_r_r(StdReg::L, StdReg::E), //tested
+            // 0x6C => self.ld_r_r(StdReg::L, StdReg::H), //tested
+            // 0x6D => self.ld_r_r(StdReg::L, StdReg::L), //tested
+            // 0x6E => self.ld_r_r(StdReg::L, StdReg::HL), //tested
+            // 0x70 => self.ld_r_r(StdReg::HL, StdReg::B), //tested
+            // 0x71 => self.ld_r_r(StdReg::HL, StdReg::C), //tested
+            // 0x72 => self.ld_r_r(StdReg::HL, StdReg::D), //tested
+            // 0x73 => self.ld_r_r(StdReg::HL, StdReg::E), //tested
+            // 0x74 => self.ld_r_r(StdReg::HL, StdReg::H), //tested
+            // 0x75 => self.ld_r_r(StdReg::HL, StdReg::L), //tested
+            // 0x36 => self.ld_r_r(StdReg::HL, StdReg::HL), //tested
+            // 0x2A => self.ldi_a_memhl(),
+            // 0x06 => self.ld_b_n(),
             0x0E => self.ld_c_n(),
-            0x22 => self.ld_mem_hl_a_inc(),
-            0x32 => self.ld_mem_hl_a_dec(),
+            // 0x22 => self.ld_mem_hl_a_inc(),
+            // 0x32 => self.ld_mem_hl_a_dec(),
             0xC3 => self.jp_nn(),
-            0xAF => self.xor_aa(),
-            0xC7 => self.rst_00(),        //tested
-            0xCF => self.rst_08(),        //tested
-            0xD7 => self.rst_10(),        //tested
-            0xDF => self.rst_18(),        //tested
-            0xE7 => self.rst_20(),        //tested
-            0xEF => self.rst_28(),        //tested
-            0xF7 => self.rst_30(),        //tested
-            0xFF => self.rst_38(),        //tested
-            0x1F => self.rr_n(StdReg::A), //tested
-            0x8F => self.adc_a_n(StdRegN::A),
-            0x88 => self.adc_a_n(StdRegN::B),
-            0x89 => self.adc_a_n(StdRegN::C),
-            0x8A => self.adc_a_n(StdRegN::D),
-            0x8B => self.adc_a_n(StdRegN::E),
-            0x8C => self.adc_a_n(StdRegN::H),
-            0x8D => self.adc_a_n(StdRegN::L),
+            0xAF => self.xor_r(StdReg::A),
+            0xA8 => self.xor_r(StdReg::B),
+            0xA9 => self.xor_r(StdReg::C),
+            0xAA => self.xor_r(StdReg::D),
+            0xAB => self.xor_r(StdReg::E),
+            0xAC => self.xor_r(StdReg::H),
+            0xAD => self.xor_r(StdReg::L),
+            // 0xC7 => self.rst_00(),        //tested
+            // 0xCF => self.rst_08(),        //tested
+            // 0xD7 => self.rst_10(),        //tested
+            // 0xDF => self.rst_18(),        //tested
+            // 0xE7 => self.rst_20(),        //tested
+            // 0xEF => self.rst_28(),        //tested
+            // 0xF7 => self.rst_30(),        //tested
+            // 0xFF => self.rst_38(),        //tested
+            // 0x1F => self.rr_n(StdReg::A), //tested
+            // 0x8F => self.adc_a_n(StdRegN::A),
+            // 0x88 => self.adc_a_n(StdRegN::B),
+            // 0x89 => self.adc_a_n(StdRegN::C),
+            // 0x8A => self.adc_a_n(StdRegN::D),
+            // 0x8B => self.adc_a_n(StdRegN::E),
+            // 0x8C => self.adc_a_n(StdRegN::H),
+            // 0x8D => self.adc_a_n(StdRegN::L),
             // 0x8E => self.adc_a_n(StdRegN::HL),
             // 0xCE => self.adc_a_n(StdRegN::N),
-            0x3C => self.inc_reg(IncDecReg::A), //tested
-            0x04 => self.inc_reg(IncDecReg::B), //tested
-            0x0C => self.inc_reg(IncDecReg::C), //tested
-            0x14 => self.inc_reg(IncDecReg::D), //tested
-            0x1C => self.inc_reg(IncDecReg::E), //tested
-            0x24 => self.inc_reg(IncDecReg::H), //tested
-            0x2C => self.inc_reg(IncDecReg::L), //tested
-            0x23 => self.inc_reg(IncDecReg::HL),
-            0x03 => self.inc_reg(IncDecReg::BC),
-            0x13 => self.inc_reg(IncDecReg::DE),
-            0x33 => self.inc_reg(IncDecReg::SP),
-            0x34 => self.inc_reg(IncDecReg::MemHL),
-            0xFE => self.cp_a_n(),
-
+            // 0x3C => self.inc_reg(IncDecReg::A), //tested
+            // 0x04 => self.inc_reg(IncDecReg::B), //tested
+            // 0x0C => self.inc_reg(IncDecReg::C), //tested
+            // 0x14 => self.inc_reg(IncDecReg::D), //tested
+            // 0x1C => self.inc_reg(IncDecReg::E), //tested
+            // 0x24 => self.inc_reg(IncDecReg::H), //tested
+            // 0x2C => self.inc_reg(IncDecReg::L), //tested
+            // 0x23 => self.inc_reg(IncDecReg::HL),
+            // 0x03 => self.inc_reg(IncDecReg::BC),
+            // 0x13 => self.inc_reg(IncDecReg::DE),
+            // 0x33 => self.inc_reg(IncDecReg::SP),
+            // 0x34 => self.inc_reg(IncDecReg::MemHL),
+            // 0xFE => self.cp_a_n(),
             0xF3 => {
                 println!("(0F3) DI => Not implemented");
                 self.pc = self.pc.wrapping_add(1);
@@ -372,63 +384,63 @@ impl<'m> Cpu<'m> {
         cycles
     }
 
-    fn dec_reg(&mut self, reg: StdReg) -> u8 {
-        self.pc = self.pc.wrapping_add(1);
-        let val: (u8, bool) = match reg {
-            StdReg::A => {
-                let dec = dec(self.reg.a, 0x01);
-                self.reg.a = dec.0;
-                dec
-            }
-            StdReg::B => {
-                let dec = dec(self.reg.b, 0x01);
-                self.reg.b = dec.0;
-                dec
-            }
-            StdReg::C => {
-                let dec = dec(self.reg.c, 0x01);
-                self.reg.c = dec.0;
-                dec
-            }
-            StdReg::D => {
-                let dec = dec(self.reg.d, 0x01);
-                self.reg.d = dec.0;
-                dec
-            }
-            StdReg::E => {
-                let dec = dec(self.reg.e, 0x01);
-                self.reg.e = dec.0;
-                dec
-            }
-            StdReg::H => {
-                let dec = dec(self.reg.h, 0x01);
-                self.reg.h = dec.0;
-                dec
-            }
-            StdReg::L => {
-                let dec = dec(self.reg.l, 0x01);
-                self.reg.l = dec.0;
-                dec
-            }
-            StdReg::HL => todo!(),
-        };
+    fn substract_u8_from_u8(&mut self, value: u8, amt: u8) -> u8 {
+        let v = value.wrapping_sub(amt);
 
-        if val.0 == 0x00 {
+        if v == 0x00 {
             self.reg.set_z();
         } else {
             self.reg.unset_z();
         }
 
-        if val.1 {
+        if will_half_borrow(value, amt) {
             self.reg.set_h();
+        } else {
+            self.reg.unset_h();
+        }
+
+        if amt > value {
+            self.reg.set_c();
+        } else {
+            self.reg.unset_c();
         }
 
         self.reg.set_n();
 
+        v
+    }
+
+    fn dec_r(&mut self, reg: StdReg) -> u8 {
+        let cycles = 4;
+        self.pc = self.pc.wrapping_add(1);
         match reg {
-            StdReg::HL => 12,
-            _ => 4,
+            StdReg::A => self.reg.a = self.substract_u8_from_u8(self.reg.a, 0x01),
+            StdReg::B => self.reg.b = self.substract_u8_from_u8(self.reg.b, 0x01),
+            StdReg::C => self.reg.c = self.substract_u8_from_u8(self.reg.c, 0x01),
+            StdReg::D => self.reg.d = self.substract_u8_from_u8(self.reg.d, 0x01),
+            StdReg::E => self.reg.e = self.substract_u8_from_u8(self.reg.e, 0x01),
+            StdReg::H => self.reg.h = self.substract_u8_from_u8(self.reg.h, 0x01),
+            StdReg::L => self.reg.l = self.substract_u8_from_u8(self.reg.l, 0x01),
+            StdReg::HL => todo!(),
         }
+
+        cycles
+    }
+
+    fn cp_a_r(&mut self, reg: StdReg) -> u8 {
+        let cycles = 4;
+        self.pc = self.pc.wrapping_add(1);
+        let value: u8 = match reg {
+            StdReg::A => self.substract_u8_from_u8(self.reg.a, 0x01),
+            StdReg::B => self.substract_u8_from_u8(self.reg.b, 0x01),
+            StdReg::C => self.substract_u8_from_u8(self.reg.c, 0x01),
+            StdReg::D => self.substract_u8_from_u8(self.reg.d, 0x01),
+            StdReg::E => self.substract_u8_from_u8(self.reg.e, 0x01),
+            StdReg::H => self.substract_u8_from_u8(self.reg.h, 0x01),
+            StdReg::L => self.substract_u8_from_u8(self.reg.l, 0x01),
+            StdReg::HL => todo!(),
+        };
+        cycles
     }
 
     fn jr(&mut self) -> u8 {
@@ -466,21 +478,34 @@ impl<'m> Cpu<'m> {
     }
 
     fn jp_nn(&mut self) -> u8 {
-        self.pc = self.pc.wrapping_add(1);
-        let lo = self.mem.read_byte(self.pc).unwrap();
-        self.pc = self.pc.wrapping_add(1);
-        let hi = self.mem.read_byte(self.pc).unwrap();
-        self.pc = self.pc.wrapping_add(1);
-        let jp_loc = ((hi as u16) << 8) | lo as u16;
-        println!("jp {:X?}", jp_loc);
-        self.pc = jp_loc;
+        let loc = self.read_u16();
+        self.pc = loc;
+        println!("jp {:#6X?}", loc);
         16
     }
 
-    fn xor_aa(&mut self) -> u8 {
-        self.reg.a = self.reg.a ^ self.reg.a;
-        self.reg.unset_all_flags();
-        self.reg.set_z();
+    fn xor_r(&mut self, reg: StdReg) -> u8 {
+        macro_rules! xor {
+            ($a:expr) => {{
+                self.reg.a = self.reg.a ^ $a;
+                self.reg.unset_all_flags();
+                if self.reg.a == 0x00 {
+                    self.reg.set_z();
+                }
+            }};
+        }
+
+        match reg {
+            StdReg::A => xor!(self.reg.a),
+            StdReg::B => xor!(self.reg.b),
+            StdReg::C => xor!(self.reg.c),
+            StdReg::D => xor!(self.reg.d),
+            StdReg::E => xor!(self.reg.e),
+            StdReg::H => xor!(self.reg.h),
+            StdReg::L => xor!(self.reg.l),
+            StdReg::HL => todo!(),
+        }
+
         self.pc = self.pc.wrapping_add(1);
         println!("XOR A",);
         4
@@ -662,7 +687,6 @@ impl<'m> Cpu<'m> {
         8
     }
 
-
     fn ld_mem_hl_a_dec(&mut self) -> u8 {
         let cycles = self.ld_mem_hl_a();
         self.reg.set_hl(self.reg.get_hl().overflowing_sub(1).0);
@@ -771,11 +795,10 @@ impl<'m> Cpu<'m> {
         cycles
     }
 
+    //TODO Make this do all the Regs
     fn ld_c_n(&mut self) -> u8 {
         self.reg.c = self.read_u8();
-
         println!("LD C {:#4X?}", self.reg.c);
-
         self.pc = self.pc.wrapping_add(1);
 
         8
@@ -1220,7 +1243,7 @@ mod tests {
     }
 
     #[test]
-    fn dec_reg() {
+    fn dec_r() {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
 
@@ -1230,7 +1253,7 @@ mod tests {
                 cpu.reg.unset_h();
                 cpu.reg.unset_n();
                 $r = 0b0111_0000;
-                assert_eq!(cpu.dec_reg($reg), 4);
+                assert_eq!(cpu.dec_r($reg), 4);
                 assert_eq!(cpu.reg.a, 111);
                 assert_eq!(cpu.reg.is_z(), false);
                 assert_eq!(cpu.reg.is_h(), true);
@@ -1250,7 +1273,7 @@ mod tests {
         cpu.reg.unset_h();
         cpu.reg.set_n();
         cpu.reg.a = 0b0000_0001;
-        assert_eq!(cpu.dec_reg(StdReg::A), 4);
+        assert_eq!(cpu.dec_r(StdReg::A), 4);
         assert_eq!(cpu.reg.a, 0);
         assert_eq!(cpu.reg.is_z(), true);
         assert_eq!(cpu.reg.is_h(), false);

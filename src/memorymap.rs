@@ -1,7 +1,7 @@
 use crate::cartridge::Cartridge;
 use crate::tile::Tile;
-use std::io;
 use std::cell::RefCell;
+use std::io;
 use std::rc::Rc;
 
 pub struct MemoryMap {
@@ -40,7 +40,10 @@ impl MemoryMap {
     }
 
     pub fn write_byte(&self, pos: u16, byte: u8) -> Result<u8, io::Error> {
-        if pos < MemSectors::RomBank1.val() {
+        println!("\x1b[92mWriting {:#4X?} to [{:#6X?}]\x1b[0m", byte, pos);
+        self.memory.borrow_mut()[pos as usize] = byte;
+        Ok(byte)
+        /* if pos < MemSectors::RomBank1.val() {
             println!("\x1b[91mCan't {:#4X?} to [{:#6X?}]\x1b[0m", byte, pos);
             Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
@@ -50,7 +53,7 @@ impl MemoryMap {
             println!("\x1b[92mWriting {:#4X?} to [{:#6X?}]\x1b[0m", byte, pos);
             self.memory.borrow_mut()[pos as usize] = byte;
             Ok(byte)
-        }
+        } */
     }
 
     pub fn print_tile(&self, pos: u16) {
