@@ -11,15 +11,17 @@ use rust_boy::cartridge::Cartridge;
 use rust_boy::cpu::Cpu;
 // use rust_boy::header::Header;
 use rust_boy::memorymap::MemoryMap;
+use rust_boy::oam::Oam;
 use std::{thread, time};
 
 fn main() {
     // LOAD CARTRIDGE
-    let rom_path = "roms/drmario.gb";
+    let rom_path = "roms/tetris.gb";
     let cartridge = Cartridge::load(rom_path);
     let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
     let mut cpu = Cpu::load(&memmap);
+    let mut oam = Oam::new(&memmap);
 
     // SETUP SDL2
     let sdl_context = sdl2::init().unwrap();
@@ -56,6 +58,8 @@ fn main() {
     let iters = 1000;
     let mut i = 0;
 
+    let mut cycles: u64 = 0;
+    let mut ly = 0;
     let start_time = Instant::now();
     // GAME LOOP
     'running: loop {
@@ -125,13 +129,23 @@ fn main() {
             }
         });
 
-        if i < iters {
-            cpu.step();
-            i += 1;
+        // if i < iters {
+        cycles += cpu.step() as u64;
+        // i += 1;
+        // }
+        //
+        // oam.load();
+        if cycles % 450 == 0 {
+            memmap.write_byte(0xFF44, ly).unwrap();
+            println!("ly {}", ly);
+            ly += 1;
+            if ly == 53 {
+                ly = 0
+            }
         }
-        /*
-        let mut start = 0x0100;
-        for i in 0..10 {
+
+        /* let mut start = 0x9800;
+        for i in 0..32 {
             memmap.print_tile(start);
             start = start + (i * 16);
         } */
