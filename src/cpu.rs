@@ -257,11 +257,8 @@ impl<'m> Cpu<'m> {
             0x13 => self.inc_reg(IncDecReg::DE),
             0x33 => self.inc_reg(IncDecReg::SP),
             0x34 => self.inc_reg(IncDecReg::MemHL),
-            0xF3 => {
-                println!("(0F3) DI => Not implemented");
-                self.pc = self.pc.wrapping_add(1);
-                0
-            }
+            0xF3 => self.di(),
+            0xFB => self.ei(),
             0xCB => {
                 self.pc = self.pc.wrapping_add(1);
                 let opcode = self.mem.read_byte(self.pc).unwrap();
@@ -289,6 +286,18 @@ impl<'m> Cpu<'m> {
 
     fn nop(&mut self) -> u8 {
         self.pc = self.pc.wrapping_add(1);
+        4
+    }
+
+    fn di(&mut self) -> u8 {
+        self.pc = self.pc.wrapping_add(1);
+        self.mem.write_byte(0xFFFF, 0x00).unwrap();
+        4
+    }
+
+    fn ei(&mut self) -> u8 {
+        self.pc = self.pc.wrapping_add(1);
+        self.mem.write_byte(0xFFFF, 0xFF).unwrap();
         4
     }
 
