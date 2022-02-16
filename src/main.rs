@@ -9,10 +9,8 @@ use sdl2::video::SwapInterval;
 
 use rust_boy::cartridge::Cartridge;
 use rust_boy::cpu::Cpu;
-// use rust_boy::header::Header;
+use rust_boy::interrupts::InterruptHandler;
 use rust_boy::memorymap::MemoryMap;
-use rust_boy::oam::Oam;
-use std::{thread, time};
 
 fn main() {
     // LOAD CARTRIDGE
@@ -21,7 +19,7 @@ fn main() {
     let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
     let mut cpu = Cpu::load(&memmap);
-    let mut oam = Oam::new(&memmap);
+    let mut interrupt = InterruptHandler::new(&memmap);
 
     // SETUP SDL2
     let sdl_context = sdl2::init().unwrap();
@@ -131,18 +129,21 @@ fn main() {
 
         // if i < iters {
         cycles += cpu.step() as u64;
+        interrupt.update_ie();
+        interrupt.update_if();
+
         // i += 1;
         // }
         //
         // oam.load();
-        if cycles % 450 == 0 {
+        /* if cycles % 450 == 0 {
             memmap.write_byte(0xFF44, ly).unwrap();
             println!("ly {}", ly);
             ly += 1;
             if ly == 53 {
                 ly = 0
             }
-        }
+        } */
 
         /* let mut start = 0x9800;
         for i in 0..32 {
