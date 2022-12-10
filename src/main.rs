@@ -5,14 +5,14 @@ use rust_boy::memorymap::MemoryMap;
 
 fn main() {
     // LOAD CARTRIDGE
-    let rom_path = "roms/01-special.gb";
+    let rom_path = "roms/09-oprr.gb";
     let cartridge = Cartridge::load(rom_path);
     let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
-    let cpu = Cpu::load(&memmap);
-    let mut interrupt = InterruptHandler::new(&memmap);
-
-    // let mut cycles: u64 = 0;
+    let mut cpu = Cpu::load(&memmap);
+    // let mut interrupt = InterruptHandler::new(&memmap);
+    //
+    let mut cycles : u64 = 0;
 
     loop {
         let cpud = cpu.get_cpu_data_debug();
@@ -35,8 +35,8 @@ fn main() {
             cpud.mem3,
         );
 
-        // cycles += cpu.step() as u64;
-        interrupt.update_ie();
-        interrupt.update_if();
+        cycles += cpu.step() as u64;
+        // interrupt.update_ie();
+        // interrupt.update_if();
     }
 }

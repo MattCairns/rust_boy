@@ -1,17 +1,5 @@
 use crate::memorymap::MemoryMap;
 use crate::registers::*;
-pub struct CpuData {
-    pub af: u16,
-    pub bc: u16,
-    pub de: u16,
-    pub hl: u16,
-    pub pc: u16,
-    pub sp: u16,
-    pub z: bool,
-    pub n: bool,
-    pub h: bool,
-    pub c: bool,
-}
 
 pub struct CpuDataDebug {
     pub a: u8,
@@ -77,21 +65,6 @@ impl<'m> Cpu<'m> {
             sp: 0xFFFE,
             pc: 0x0100,
             mem,
-        }
-    }
-
-    pub fn get_cpu_data(&self) -> CpuData {
-        CpuData {
-            af: self.reg.get_af(),
-            bc: self.reg.get_bc(),
-            de: self.reg.get_de(),
-            hl: self.reg.get_hl(),
-            pc: self.pc,
-            sp: self.sp,
-            z: self.reg.is_z(),
-            n: self.reg.is_n(),
-            h: self.reg.is_h(),
-            c: self.reg.is_c(),
         }
     }
 
@@ -417,10 +390,14 @@ impl<'m> Cpu<'m> {
             ($a:expr) => {{
                 if will_half_carry($a, 1) {
                     self.reg.set_h();
+                } else {
+                    self.reg.unset_h();
                 }
                 $a = $a.wrapping_add(1);
                 if $a == 0x00 {
                     self.reg.set_z();
+                } else {
+                    self.reg.unset_z();
                 }
                 self.reg.unset_n();
             }};
@@ -566,7 +543,7 @@ impl<'m> Cpu<'m> {
         if cond.check(self.reg.f) {
             cycles = self.jr();
         } else {
-            self.pc = self.pc.wrapping_add(3);
+            self.pc = self.pc.wrapping_add(2);
         }
 
         cycles
@@ -1630,7 +1607,8 @@ mod tests {
         cpu.mem.write_byte(cpu.pc + 2, amt[1]).unwrap();
 
         assert_eq!(cpu.jr(), 4 * 3);
-        assert_eq!(cpu.pc, pc - 0x000A + 4);
+        println!("{} {}", cpu.pc, pc);
+        assert_eq!(cpu.pc, pc - 0x000A + 2);
     }
 
     #[test]
@@ -1648,12 +1626,12 @@ mod tests {
 
         cpu.reg.set_z();
         assert_eq!(cpu.jr_cond(FlagCond::NZ), 4 * 2);
-        assert_eq!(cpu.pc, pc + 3);
+        assert_eq!(cpu.pc, pc + 2);
 
         cpu.pc = pc;
         cpu.reg.unset_z();
         assert_eq!(cpu.jr_cond(FlagCond::NZ), 4 * 3);
-        assert_eq!(cpu.pc, pc - 0x000A + 4);
+        assert_eq!(cpu.pc, pc - 0x000A + 2);
     }
 
     #[test]
