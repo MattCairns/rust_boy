@@ -13,6 +13,23 @@ pub struct CpuData {
     pub c: bool,
 }
 
+pub struct CpuDataDebug {
+    pub a: u8,
+    pub f: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    pub h: u8,
+    pub l: u8,
+    pub sp: u16,
+    pub pc: u16,
+    pub mem0: u8,
+    pub mem1: u8,
+    pub mem2: u8,
+    pub mem3: u8,
+}
+
 pub struct Cpu<'m> {
     reg: Registers,
     sp: u16,
@@ -78,6 +95,25 @@ impl<'m> Cpu<'m> {
         }
     }
 
+    pub fn get_cpu_data_debug(&self) -> CpuDataDebug {
+        CpuDataDebug {
+            a: self.reg.a,
+            f: self.reg.f,
+            b: self.reg.b,
+            c: self.reg.c,
+            d: self.reg.d,
+            e: self.reg.e,
+            h: self.reg.h,
+            l: self.reg.l,
+            sp: self.sp,
+            pc: self.pc,
+            mem0: self.mem.read_byte(self.pc + 0).unwrap(),
+            mem1: self.mem.read_byte(self.pc + 1).unwrap(),
+            mem2: self.mem.read_byte(self.pc + 2).unwrap(),
+            mem3: self.mem.read_byte(self.pc + 3).unwrap(),
+        }
+    }
+
     pub fn step(&mut self) -> u8 {
         /* let mut start = 0x8000;
         for i in 0..10 {
@@ -85,12 +121,8 @@ impl<'m> Cpu<'m> {
             start = start + (i * 16);
         } */
         let opcode = self.mem.read_byte(self.pc).unwrap();
-        print!("[{:#06X?}] {:#04X?} --> ", self.pc, opcode);
         match opcode {
-            0x00 => {
-                println!("NOP");
-                self.nop()
-            } //tested
+            0x00 => self.nop(),                 //tested
             0x0F => self.rrca(),                //tested
             0xC9 => self.ret(),                 //tested
             0xC0 => self.ret_cc(FlagCond::NZ),  //tested
@@ -204,7 +236,7 @@ impl<'m> Cpu<'m> {
             // 0x06 => self.ld_b_n(),
             0x0E => self.ld_r_n(StdReg::C),
             0x06 => self.ld_r_n(StdReg::B),
-            0x0E => self.ld_r_n(StdReg::C),
+            // 0x0E => self.ld_r_n(StdReg::C),
             0x16 => self.ld_r_n(StdReg::D),
             0x1E => self.ld_r_n(StdReg::E),
             0x26 => self.ld_r_n(StdReg::H),
@@ -394,8 +426,6 @@ impl<'m> Cpu<'m> {
             }};
         }
 
-        println!("INC {:?}", reg);
-
         match reg {
             IncDecReg::A => inc!(self.reg.a),
             IncDecReg::B => inc!(self.reg.b),
@@ -469,7 +499,6 @@ impl<'m> Cpu<'m> {
 
     fn dec_r(&mut self, reg: StdReg) -> u8 {
         let cycles = 4;
-        println!("DEC {:?}", reg);
         match reg {
             StdReg::A => self.reg.a = self.substract_u8_from_u8(self.reg.a, 0x01),
             StdReg::B => self.reg.b = self.substract_u8_from_u8(self.reg.b, 0x01),
@@ -489,7 +518,7 @@ impl<'m> Cpu<'m> {
     fn cp_a_r(&mut self, reg: StdReg) -> u8 {
         let cycles = 4;
         self.pc = self.pc.wrapping_add(1);
-        let value: u8 = match reg {
+        match reg {
             StdReg::A => self.substract_u8_from_u8(self.reg.a, 0x01),
             StdReg::B => self.substract_u8_from_u8(self.reg.b, 0x01),
             StdReg::C => self.substract_u8_from_u8(self.reg.c, 0x01),
@@ -505,8 +534,6 @@ impl<'m> Cpu<'m> {
     fn cp_a_n(&mut self) -> u8 {
         let n = self.read_u8();
         self.substract_u8_from_u8(self.reg.a, n);
-
-        println!("CP A {:#4X?}", n);
 
         4
     }
@@ -536,7 +563,6 @@ impl<'m> Cpu<'m> {
     }
     fn jr_cond(&mut self, cond: FlagCond) -> u8 {
         let mut cycles: u8 = 8;
-        println!("JR {:?}", cond);
         if cond.check(self.reg.f) {
             cycles = self.jr();
         } else {
@@ -549,7 +575,6 @@ impl<'m> Cpu<'m> {
     fn jp_nn(&mut self) -> u8 {
         let loc = self.read_u16();
         self.pc = loc;
-        println!("jp {:#6X?}", loc);
         16
     }
 
@@ -576,7 +601,6 @@ impl<'m> Cpu<'m> {
         }
 
         self.pc = self.pc.wrapping_add(1);
-        println!("XOR A",);
         4
     }
 
@@ -585,8 +609,6 @@ impl<'m> Cpu<'m> {
         let cycles = 12;
 
         let b = 0xFF00 + self.read_u8() as u16;
-
-        println!("LD {:#6X} A", b);
 
         if (0xFF00..0xFFFF).contains(&b) {
             self.mem.write_byte(b, self.reg.a).unwrap();
@@ -603,14 +625,12 @@ impl<'m> Cpu<'m> {
 
         if (0xFF00..0xFFFF).contains(&b) {
             self.reg.a = self.mem.read_byte(b).unwrap();
-            println!("LD A {:#4X}", self.reg.a);
         }
 
         cycles
     }
 
     fn ld_r_r(&mut self, r1: StdReg, r2: StdReg) -> u8 {
-        println!("LD {:?} {:?}", r1, r2);
         let mut cycles = 4;
         let _ret = match r1 {
             StdReg::A => match r2 {
@@ -729,7 +749,6 @@ impl<'m> Cpu<'m> {
     }
 
     fn ldi_a_memhl(&mut self) -> u8 {
-        println!("LD A [HL++]");
         let hl = self.reg.get_hl();
 
         self.reg.a = self.mem.read_byte(hl).unwrap();
@@ -741,7 +760,6 @@ impl<'m> Cpu<'m> {
     }
 
     fn ld_mem_hl_a(&mut self) -> u8 {
-        println!("LD [HL-] A");
         self.mem.write_byte(self.reg.get_hl(), self.reg.a).unwrap();
         self.pc = self.pc.wrapping_add(1);
 
@@ -764,7 +782,6 @@ impl<'m> Cpu<'m> {
 
     fn ld_a_n(&mut self, reg: LoadReg) -> u8 {
         let mut cycles = 4;
-        println!("LD A {:?}", reg);
 
         match reg {
             LoadReg::A => self.reg.a = self.reg.a,
@@ -794,7 +811,6 @@ impl<'m> Cpu<'m> {
             LoadReg::N => {
                 cycles = 8;
                 self.reg.a = self.read_u8();
-                println!("{:#4X}", self.reg.a);
             }
         }
 
@@ -803,7 +819,6 @@ impl<'m> Cpu<'m> {
 
     fn ld_n_a(&mut self, reg: LoadReg) -> u8 {
         let mut cycles = 4;
-        println!("LD {:?} A", reg);
         match reg {
             LoadReg::A => self.reg.a = self.reg.a,
             LoadReg::B => self.reg.b = self.reg.a,
@@ -842,7 +857,6 @@ impl<'m> Cpu<'m> {
         let cycles = 12;
 
         let nn = self.read_u16();
-        println!("LD {:?} {:#6X?}", reg, nn);
 
         match reg {
             LoadRegnnn::BC => self.reg.set_bc(nn),
@@ -859,7 +873,6 @@ impl<'m> Cpu<'m> {
         macro_rules! ld {
             ($a:expr) => {{
                 $a = self.read_u8();
-                println!("LD {:?} {:#4X?}", reg, $a);
             }};
         }
 
@@ -971,12 +984,9 @@ impl<'m> Cpu<'m> {
         self.mem.write_byte(self.sp, lo).unwrap();
         self.sp = self.sp.wrapping_sub(1);
         self.mem.write_byte(self.sp, hi).unwrap();
-
-        println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
     }
 
     fn pop(&mut self) -> u16 {
-        println!("\x1b[93mSP == {:#6X}\x1b[0m", self.sp);
         let hi = self.mem.read_byte(self.sp).unwrap();
         self.sp = self.sp.wrapping_add(1);
         let lo = self.mem.read_byte(self.sp).unwrap();
@@ -1012,7 +1022,6 @@ impl<'m> Cpu<'m> {
 
         if cond.check(self.reg.f) {
             cycles = 20;
-            println!("RET {:?}", cond);
             self.pc = self.pop();
         } else {
             self.pc = self.pc.wrapping_add(1);
@@ -1533,7 +1542,6 @@ mod tests {
                 cpu.mem.write_byte(cpu.pc + 1, 0x88).unwrap();
                 cpu.mem.write_byte(cpu.pc + 2, 0x99).unwrap();
 
-                println!("{:?}", $reg);
                 assert_eq!(cpu.call_cc($reg), 24);
                 assert_eq!(cpu.pc, 0x9988);
                 assert_eq!(cpu.mem.read_byte(cpu.sp + 1).unwrap(), 0x82);

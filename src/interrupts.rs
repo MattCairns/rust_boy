@@ -26,28 +26,30 @@ impl Interrupt {
 
 pub struct InterruptHandler<'m> {
     mem: &'m MemoryMap,
-    IE: Interrupt,
-    IF: Interrupt,
+    interrupt_enable: Interrupt,
+    interrupt_flags: Interrupt,
 }
 
 impl<'m> InterruptHandler<'m> {
     pub fn new(mem: &'m MemoryMap) -> Self {
         Self {
             mem,
-            IE: Interrupt::default(),
-            IF: Interrupt::default(),
+            interrupt_enable: Interrupt::default(),
+            interrupt_flags: Interrupt::default(),
         }
     }
 
-    pub fn service(&self) -> u16 {}
+    pub fn service(&self) -> u16 {
+        0
+    }
 
     pub fn update_ie(&mut self) {
-        self.IE.decode(&self.mem.read_byte(0xFFFF).unwrap());
-        println!("IE == {:?}", self.IE);
+        self.interrupt_enable.decode(&self.mem.read_byte(0xFFFF).unwrap());
+        println!("interrupt_enable == {:?}", self.interrupt_enable);
     }
 
     pub fn update_if(&mut self) {
-        self.IF.decode(&self.mem.read_byte(0xFF0F).unwrap());
-        println!("IF == {:?}", self.IF);
+        self.interrupt_flags.decode(&self.mem.read_byte(0xFF0F).unwrap());
+        println!("interrupt_flags == {:?}", self.interrupt_flags);
     }
 }
