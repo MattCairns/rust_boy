@@ -24,6 +24,7 @@
             pkg-config
             exa
             fd
+            rust-analyzer
             rust-bin.beta.latest.default
           ];
 
