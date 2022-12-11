@@ -94,6 +94,13 @@ impl<'m> Cpu<'m> {
             start = start + (i * 16);
         } */
         let opcode = self.mem.read_byte(self.pc).unwrap();
+        // println!(
+        //     "C{} H{} N{} Z{}",
+        //     self.reg.is_c(),
+        //     self.reg.is_h(),
+        //     self.reg.is_n(),
+        //     self.reg.is_z()
+        // );
         match opcode {
             0x00 => self.nop(),                 //tested
             0x0F => self.rrca(),                //tested
@@ -476,14 +483,33 @@ impl<'m> Cpu<'m> {
 
     fn dec_r(&mut self, reg: StdReg) -> u8 {
         let cycles = 4;
+        macro_rules! dec {
+            ($a:expr) => {{
+                if will_half_borrow($a, 0x01) {
+                    self.reg.set_h();
+                } else {
+                    self.reg.unset_h();
+                }
+
+                $a = $a.wrapping_sub(0x01);
+
+                if $a == 0x00 {
+                    self.reg.set_z();
+                } else {
+                    self.reg.unset_z();
+                }
+
+                self.reg.set_n();
+            }};
+        }
         match reg {
-            StdReg::A => self.reg.a = self.substract_u8_from_u8(self.reg.a, 0x01),
-            StdReg::B => self.reg.b = self.substract_u8_from_u8(self.reg.b, 0x01),
-            StdReg::C => self.reg.c = self.substract_u8_from_u8(self.reg.c, 0x01),
-            StdReg::D => self.reg.d = self.substract_u8_from_u8(self.reg.d, 0x01),
-            StdReg::E => self.reg.e = self.substract_u8_from_u8(self.reg.e, 0x01),
-            StdReg::H => self.reg.h = self.substract_u8_from_u8(self.reg.h, 0x01),
-            StdReg::L => self.reg.l = self.substract_u8_from_u8(self.reg.l, 0x01),
+            StdReg::A => dec!(self.reg.a),
+            StdReg::B => dec!(self.reg.b),
+            StdReg::C => dec!(self.reg.c),
+            StdReg::D => dec!(self.reg.d),
+            StdReg::E => dec!(self.reg.e),
+            StdReg::H => dec!(self.reg.h),
+            StdReg::L => dec!(self.reg.l),
             StdReg::HL => todo!(),
         }
 
@@ -788,8 +814,11 @@ impl<'m> Cpu<'m> {
             LoadReg::N => {
                 cycles = 8;
                 self.reg.a = self.read_u8();
+                self.pc = self.pc.wrapping_sub(1);
             }
         }
+
+        self.pc = self.pc.wrapping_add(1);
 
         cycles
     }
@@ -953,6 +982,7 @@ impl<'m> Cpu<'m> {
     fn push_hl(&mut self) -> u8 {
         let cycles: u8 = 16;
         self.push(self.reg.h, self.reg.l);
+        self.pc = self.pc.wrapping_add(1);
         cycles
     }
 
@@ -964,9 +994,9 @@ impl<'m> Cpu<'m> {
     }
 
     fn pop(&mut self) -> u16 {
-        let hi = self.mem.read_byte(self.sp).unwrap();
-        self.sp = self.sp.wrapping_add(1);
         let lo = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        let hi = self.mem.read_byte(self.sp).unwrap();
         self.sp = self.sp.wrapping_add(1);
 
         ((hi as u16) << 8) | lo as u16
@@ -1089,7 +1119,7 @@ mod tests {
         cpu.push(lo, hi);
         let cycles = cpu.ret();
 
-        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cpu.pc, 0x5080);
         assert_eq!(cycles, 16);
     }
 
@@ -1098,11 +1128,13 @@ mod tests {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
 
+        cpu.pc = 0x8050;
         cpu.reg.a = 0x00;
         cpu.reg.b = 0xFF;
         let cycles = cpu.ld_a_n(LoadReg::B);
         assert_eq!(cycles, 4);
         assert_eq!(cpu.reg.a, cpu.reg.b);
+        assert_eq!(cpu.pc, 0x8051);
 
         cpu.reg.b = 0x80;
         cpu.reg.c = 0x80;
@@ -1285,11 +1317,11 @@ mod tests {
                 cpu.reg.unset_z();
                 cpu.reg.unset_h();
                 cpu.reg.unset_n();
-                $r = 0b0111_0000;
+                $r = 20;
                 assert_eq!(cpu.dec_r($reg), 4);
-                assert_eq!(cpu.reg.a, 111);
+                assert_eq!($r, 19);
                 assert_eq!(cpu.reg.is_z(), false);
-                assert_eq!(cpu.reg.is_h(), true);
+                assert_eq!(cpu.reg.is_h(), false);
                 assert_eq!(cpu.reg.is_n(), true);
             };
         }
@@ -1305,7 +1337,7 @@ mod tests {
         cpu.reg.unset_z();
         cpu.reg.unset_h();
         cpu.reg.set_n();
-        cpu.reg.a = 0b0000_0001;
+        cpu.reg.a = 0x01;
         assert_eq!(cpu.dec_r(StdReg::A), 4);
         assert_eq!(cpu.reg.a, 0);
         assert_eq!(cpu.reg.is_z(), true);
@@ -1384,7 +1416,7 @@ mod tests {
         cpu.pc = 0x0000;
         cpu.reg.unset_z();
         let cycles = cpu.ret_cc(FlagCond::NZ);
-        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cpu.pc, 0x5080);
         assert_eq!(cycles, 20);
 
         let lo = 0x50;
@@ -1400,7 +1432,7 @@ mod tests {
         cpu.pc = 0x0000;
         cpu.reg.set_z();
         let cycles = cpu.ret_cc(FlagCond::Z);
-        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cpu.pc, 0x5080);
         assert_eq!(cycles, 20);
 
         let lo = 0x50;
@@ -1416,7 +1448,7 @@ mod tests {
         cpu.pc = 0x0000;
         cpu.reg.unset_c();
         let cycles = cpu.ret_cc(FlagCond::NC);
-        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cpu.pc, 0x5080);
         assert_eq!(cycles, 20);
 
         let lo = 0x50;
@@ -1432,7 +1464,7 @@ mod tests {
         cpu.pc = 0x0000;
         cpu.reg.set_c();
         let cycles = cpu.ret_cc(FlagCond::C);
-        assert_eq!(cpu.pc, 0x8050);
+        assert_eq!(cpu.pc, 0x5080);
         assert_eq!(cycles, 20);
     }
 
@@ -1444,7 +1476,7 @@ mod tests {
         let lo = 0xFF;
         let hi = 0xDD;
 
-        let val = ((hi as u16) << 8) | lo as u16;
+        let val = ((lo as u16) << 8) | hi as u16;
 
         cpu.push(lo, hi);
         let pop = cpu.pop();
