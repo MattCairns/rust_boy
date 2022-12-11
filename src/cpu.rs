@@ -114,7 +114,14 @@ impl<'m> Cpu<'m> {
             0xCC => self.call_cc(FlagCond::Z),  //tested
             0xD4 => self.call_cc(FlagCond::NC), //tested
             0xDC => self.call_cc(FlagCond::C),  //tested
+            0xC1 => self.pop_bc(),
+            0xD1 => self.pop_de(),
+            0xE1 => self.pop_hl(),
+            0xF1 => self.pop_af(),
+            0xC5 => self.push_bc(),
+            0xD5 => self.push_de(),
             0xE5 => self.push_hl(),
+            0xF5 => self.push_af(),
             0x3D => self.dec_r(StdReg::A), //tested
             0x05 => self.dec_r(StdReg::B), //tested
             0x0D => self.dec_r(StdReg::C), //tested
@@ -224,6 +231,12 @@ impl<'m> Cpu<'m> {
             0x22 => self.ld_mem_hl_a_inc(), // tested (!SHEET)
             0x32 => self.ld_mem_hl_a_dec(), // tested (!SHEET)
             0xC3 => self.jp_nn(),
+            0xB1 => self.or_a_r(StdReg::C),
+            0xB2 => self.or_a_r(StdReg::D),
+            0xB3 => self.or_a_r(StdReg::E),
+            0xB4 => self.or_a_r(StdReg::H),
+            0xB5 => self.or_a_r(StdReg::L),
+            0xB7 => self.or_a_r(StdReg::A),
             0xAF => self.xor_r(StdReg::A),
             0xA8 => self.xor_r(StdReg::B),
             0xA9 => self.xor_r(StdReg::C),
@@ -579,6 +592,32 @@ impl<'m> Cpu<'m> {
         let loc = self.read_u16();
         self.pc = loc;
         16
+    }
+
+    fn or_a_r(&mut self, reg: StdReg) -> u8 {
+        macro_rules! xor {
+            ($a:expr) => {{
+                self.reg.a = self.reg.a | $a;
+                self.reg.unset_all_flags();
+                if $a == 0x00 {
+                    self.reg.set_z();
+                }
+            }};
+        }
+
+        match reg {
+            StdReg::A => xor!(self.reg.a),
+            StdReg::B => xor!(self.reg.b),
+            StdReg::C => xor!(self.reg.c),
+            StdReg::D => xor!(self.reg.d),
+            StdReg::E => xor!(self.reg.e),
+            StdReg::H => xor!(self.reg.h),
+            StdReg::L => xor!(self.reg.l),
+            StdReg::HL => todo!(),
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+        4
     }
 
     fn xor_r(&mut self, reg: StdReg) -> u8 {
@@ -979,10 +1018,60 @@ impl<'m> Cpu<'m> {
         cycles // HL = 16
     }
 
-    fn push_hl(&mut self) -> u8 {
-        let cycles: u8 = 16;
-        self.push(self.reg.h, self.reg.l);
+    fn pop(&mut self) -> u16 {
+        let lo = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        let hi = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+
+        ((hi as u16) << 8) | lo as u16
+    }
+
+    fn pop_bc(&mut self) -> u8 {
+        let cycles: u8 = 12;
+        self.reg.c = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        self.reg.b = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+
         self.pc = self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn pop_de(&mut self) -> u8 {
+        let cycles: u8 = 12;
+        self.reg.e = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        self.reg.d = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn pop_af(&mut self) -> u8 {
+        let cycles: u8 = 12;
+        self.reg.f = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        self.reg.a = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles
+    }
+
+    fn pop_hl(&mut self) -> u8 {
+        let cycles: u8 = 12;
+        self.reg.l = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+        self.reg.h = self.mem.read_byte(self.sp).unwrap();
+        self.sp = self.sp.wrapping_add(1);
+
+        self.pc = self.pc.wrapping_add(1);
+
         cycles
     }
 
@@ -993,13 +1082,27 @@ impl<'m> Cpu<'m> {
         self.mem.write_byte(self.sp, hi).unwrap();
     }
 
-    fn pop(&mut self) -> u16 {
-        let lo = self.mem.read_byte(self.sp).unwrap();
-        self.sp = self.sp.wrapping_add(1);
-        let hi = self.mem.read_byte(self.sp).unwrap();
-        self.sp = self.sp.wrapping_add(1);
+    fn push_rr(&mut self, lo: u8, hi: u8) -> u8 {
+        let cycles: u8 = 16;
+        self.push(lo, hi);
+        self.pc = self.pc.wrapping_add(1);
+        cycles
+    }
 
-        ((hi as u16) << 8) | lo as u16
+    fn push_bc(&mut self) -> u8 {
+        self.push_rr(self.reg.b, self.reg.c)
+    }
+
+    fn push_de(&mut self) -> u8 {
+        self.push_rr(self.reg.d, self.reg.e)
+    }
+
+    fn push_hl(&mut self) -> u8 {
+        self.push_rr(self.reg.h, self.reg.l)
+    }
+
+    fn push_af(&mut self) -> u8 {
+        self.push_rr(self.reg.a, self.reg.f)
     }
 
     fn read_u8(&mut self) -> u8 {
