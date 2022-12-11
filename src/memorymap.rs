@@ -29,12 +29,14 @@ impl MemoryMap {
     }
 
     pub fn read_byte(&self, pos: u16) -> Result<u8, io::Error> {
+        println!("READ BYTE {:X}", pos);
         if pos > MemSectors::IE.val() {
             Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Cannot read from out of bounds memory.",
             ))
         } else {
+            // println!("read_byte --> {:X} :: {:X}", pos, self.memory.borrow_mut()[pos as usize]);
             Ok(self.memory.borrow_mut()[pos as usize])
         }
     }

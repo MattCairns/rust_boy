@@ -53,6 +53,7 @@ impl<'m> Cpu<'m> {
         mem.write_byte(0xFF40, 0x91).unwrap();
         mem.write_byte(0xFF42, 0x00).unwrap();
         mem.write_byte(0xFF43, 0x00).unwrap();
+        mem.write_byte(0xFF44, 0x90).unwrap();
         mem.write_byte(0xFF45, 0x00).unwrap();
         mem.write_byte(0xFF47, 0xFC).unwrap();
         mem.write_byte(0xFF48, 0xFF).unwrap();
@@ -231,6 +232,15 @@ impl<'m> Cpu<'m> {
             0x22 => self.ld_mem_hl_a_inc(), // tested (!SHEET)
             0x32 => self.ld_mem_hl_a_dec(), // tested (!SHEET)
             0xC3 => self.jp_nn(),
+            0xA7 => self.and_a_r(LoadReg::A),
+            0xA0 => self.and_a_r(LoadReg::B),
+            0xA1 => self.and_a_r(LoadReg::C),
+            0xA2 => self.and_a_r(LoadReg::D),
+            0xA3 => self.and_a_r(LoadReg::E),
+            0xA4 => self.and_a_r(LoadReg::H),
+            0xA5 => self.and_a_r(LoadReg::L),
+            0xA6 => self.and_a_r(LoadReg::MemHL),
+            0xE6 => self.and_a_r(LoadReg::N),
             0xB1 => self.or_a_r(StdReg::C),
             0xB2 => self.or_a_r(StdReg::D),
             0xB3 => self.or_a_r(StdReg::E),
@@ -253,14 +263,15 @@ impl<'m> Cpu<'m> {
             0xF7 => self.rst_30(),        //tested
             0xFF => self.rst_38(),        //tested
             0x1F => self.rr_n(StdReg::A), //tested
-            0x80 => self.add_a_r(StdReg::B),
-            0x81 => self.add_a_r(StdReg::C),
-            0x82 => self.add_a_r(StdReg::D),
-            0x83 => self.add_a_r(StdReg::E),
-            0x84 => self.add_a_r(StdReg::H),
-            0x85 => self.add_a_r(StdReg::L),
-            0x86 => self.add_a_r(StdReg::HL), //TODO
-            0x87 => self.add_a_r(StdReg::A),
+            0x80 => self.add_a_r(StdRegN::B),
+            0x81 => self.add_a_r(StdRegN::C),
+            0x82 => self.add_a_r(StdRegN::D),
+            0x83 => self.add_a_r(StdRegN::E),
+            0x84 => self.add_a_r(StdRegN::H),
+            0x85 => self.add_a_r(StdRegN::L),
+            0x86 => self.add_a_r(StdRegN::HL), //TODO
+            0x87 => self.add_a_r(StdRegN::A),
+            0xC6 => self.add_a_r(StdRegN::N),
             0x8F => self.adc_a_n(StdRegN::A),
             0x88 => self.adc_a_n(StdRegN::B),
             0x89 => self.adc_a_n(StdRegN::C),
@@ -339,7 +350,7 @@ impl<'m> Cpu<'m> {
         4
     }
 
-    fn add_a_r(&mut self, reg: StdReg) -> u8 {
+    fn add_a_r(&mut self, reg: StdRegN) -> u8 {
         let cycles = 4;
 
         macro_rules! add {
@@ -351,22 +362,37 @@ impl<'m> Cpu<'m> {
                     self.reg.set_c();
                 };
                 $a = $a.wrapping_add($b);
+                if $a == 0x00 {
+                    self.reg.set_z();
+                }
             }};
         }
 
+            println!("WHAT");
+
         match reg {
-            StdReg::A => add!(self.reg.a, self.reg.a),
-            StdReg::B => add!(self.reg.a, self.reg.b),
-            StdReg::C => add!(self.reg.a, self.reg.c),
-            StdReg::D => add!(self.reg.a, self.reg.d),
-            StdReg::E => add!(self.reg.a, self.reg.e),
-            StdReg::H => add!(self.reg.a, self.reg.h),
-            StdReg::L => add!(self.reg.a, self.reg.l),
-            StdReg::HL => todo!(),
+            StdRegN::A => add!(self.reg.a, self.reg.a),
+            StdRegN::B => add!(self.reg.a, self.reg.b),
+            StdRegN::C => add!(self.reg.a, self.reg.c),
+            StdRegN::D => add!(self.reg.a, self.reg.d),
+            StdRegN::E => add!(self.reg.a, self.reg.e),
+            StdRegN::H => add!(self.reg.a, self.reg.h),
+            StdRegN::L => add!(self.reg.a, self.reg.l),
+            StdRegN::HL => todo!(),
+            StdRegN::N => {
+                println!("PC --> {:X}", self.pc);
+                add!(self.reg.a, self.read_u8());
+                println!("PC --> {:X}", self.pc);
+                self.pc = self.pc.wrapping_sub(1);
+                println!("PC --> {:X}", self.pc);
+                println!("EXIT N");
+            }
         }
 
         self.pc = self.pc.wrapping_add(1);
+                println!("PC --> {:X}", self.pc);
 
+            println!("OUT");
         cycles
     }
 
@@ -594,25 +620,61 @@ impl<'m> Cpu<'m> {
         16
     }
 
+    fn and_a_r(&mut self, reg: LoadReg) -> u8 {
+        macro_rules! and {
+            ($a:expr) => {{
+                self.reg.a = self.reg.a & $a;
+                self.reg.unset_all_flags();
+                if self.reg.a == 0x00 {
+                    self.reg.set_z();
+                }
+                self.reg.set_h();
+                self.reg.unset_n();
+                self.reg.unset_c();
+            }};
+        }
+
+        match reg {
+            LoadReg::A => and!(self.reg.a),
+            LoadReg::B => and!(self.reg.b),
+            LoadReg::C => and!(self.reg.c),
+            LoadReg::D => and!(self.reg.d),
+            LoadReg::E => and!(self.reg.e),
+            LoadReg::H => and!(self.reg.h),
+            LoadReg::L => and!(self.reg.l),
+            LoadReg::MemBC => todo!(),
+            LoadReg::MemDE => todo!(),
+            LoadReg::MemHL => todo!(),
+            LoadReg::MemNN => todo!(),
+            LoadReg::N => {
+                and!(self.read_u8());
+                self.pc = self.pc.wrapping_sub(1);
+            }
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+        4
+    }
+
     fn or_a_r(&mut self, reg: StdReg) -> u8 {
-        macro_rules! xor {
+        macro_rules! or {
             ($a:expr) => {{
                 self.reg.a = self.reg.a | $a;
                 self.reg.unset_all_flags();
-                if $a == 0x00 {
+                if self.reg.a == 0x00 {
                     self.reg.set_z();
                 }
             }};
         }
 
         match reg {
-            StdReg::A => xor!(self.reg.a),
-            StdReg::B => xor!(self.reg.b),
-            StdReg::C => xor!(self.reg.c),
-            StdReg::D => xor!(self.reg.d),
-            StdReg::E => xor!(self.reg.e),
-            StdReg::H => xor!(self.reg.h),
-            StdReg::L => xor!(self.reg.l),
+            StdReg::A => or!(self.reg.a),
+            StdReg::B => or!(self.reg.b),
+            StdReg::C => or!(self.reg.c),
+            StdReg::D => or!(self.reg.d),
+            StdReg::E => or!(self.reg.e),
+            StdReg::H => or!(self.reg.h),
+            StdReg::L => or!(self.reg.l),
             StdReg::HL => todo!(),
         }
 
@@ -652,6 +714,10 @@ impl<'m> Cpu<'m> {
 
         let b = 0xFF00 + self.read_u8() as u16;
 
+        if b == 0xff44 {
+            println!("LY {}", self.reg.a);
+        }
+
         if (0xFF00..0xFFFF).contains(&b) {
             self.mem.write_byte(b, self.reg.a).unwrap();
         }
@@ -663,10 +729,16 @@ impl<'m> Cpu<'m> {
         //Must be between $FF00 and $FFFF
         let cycles = 12;
 
-        let b = 0xFF00 + self.read_u8() as u16;
+        let a = self.read_u8();
+        let b = 0xFF00 + a as u16;
 
         if (0xFF00..0xFFFF).contains(&b) {
             self.reg.a = self.mem.read_byte(b).unwrap();
+            // for i in 0xFF00..0xFFFF {
+            //     println!("{:X} :: {:X}",i,self.mem.read_byte(i).unwrap());
+            // }
+        } else {
+            println!("ld_a_ff00() --> Memory location {} is not readable.", b);
         }
 
         cycles
@@ -849,6 +921,7 @@ impl<'m> Cpu<'m> {
                 cycles = 16;
                 let loc = self.read_u16();
                 self.reg.a = self.mem.read_byte(loc).unwrap();
+                self.pc = self.pc.wrapping_sub(1);
             }
             LoadReg::N => {
                 cycles = 8;
@@ -1106,9 +1179,13 @@ impl<'m> Cpu<'m> {
     }
 
     fn read_u8(&mut self) -> u8 {
+        println!("PC R1 --> {:X}", self.pc);
         self.pc = self.pc.wrapping_add(1);
+        println!("PC R2 --> {:X}", self.pc);
         let b = self.mem.read_byte(self.pc).unwrap();
+        println!("PC R3 --> {:X}", self.pc);
         self.pc = self.pc.wrapping_add(1);
+        println!("PC R4 --> {:X}", self.pc);
         b
     }
 
