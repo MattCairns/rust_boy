@@ -29,7 +29,6 @@ impl MemoryMap {
     }
 
     pub fn read_byte(&self, pos: u16) -> Result<u8, io::Error> {
-        println!("READ BYTE {:X}", pos);
         if pos > MemSectors::IE.val() {
             Err(io::Error::new(
                 io::ErrorKind::InvalidInput,

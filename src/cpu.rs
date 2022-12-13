@@ -351,7 +351,7 @@ impl<'m> Cpu<'m> {
     }
 
     fn add_a_r(&mut self, reg: StdRegN) -> u8 {
-        let cycles = 4;
+        let mut cycles = 4;
 
         macro_rules! add {
             ($a:expr,$b:expr) => {{
@@ -365,10 +365,9 @@ impl<'m> Cpu<'m> {
                 if $a == 0x00 {
                     self.reg.set_z();
                 }
+                self.reg.unset_n();
             }};
         }
-
-            println!("WHAT");
 
         match reg {
             StdRegN::A => add!(self.reg.a, self.reg.a),
@@ -378,21 +377,16 @@ impl<'m> Cpu<'m> {
             StdRegN::E => add!(self.reg.a, self.reg.e),
             StdRegN::H => add!(self.reg.a, self.reg.h),
             StdRegN::L => add!(self.reg.a, self.reg.l),
-            StdRegN::HL => todo!(),
             StdRegN::N => {
-                println!("PC --> {:X}", self.pc);
-                add!(self.reg.a, self.read_u8());
-                println!("PC --> {:X}", self.pc);
+                let amt = self.read_u8();
+                add!(self.reg.a, amt);
                 self.pc = self.pc.wrapping_sub(1);
-                println!("PC --> {:X}", self.pc);
-                println!("EXIT N");
+                cycles = 8;
             }
+            StdRegN::HL => println!("HL Not implemented"),
         }
 
         self.pc = self.pc.wrapping_add(1);
-                println!("PC --> {:X}", self.pc);
-
-            println!("OUT");
         cycles
     }
 
@@ -713,10 +707,6 @@ impl<'m> Cpu<'m> {
         let cycles = 12;
 
         let b = 0xFF00 + self.read_u8() as u16;
-
-        if b == 0xff44 {
-            println!("LY {}", self.reg.a);
-        }
 
         if (0xFF00..0xFFFF).contains(&b) {
             self.mem.write_byte(b, self.reg.a).unwrap();
@@ -1179,13 +1169,9 @@ impl<'m> Cpu<'m> {
     }
 
     fn read_u8(&mut self) -> u8 {
-        println!("PC R1 --> {:X}", self.pc);
         self.pc = self.pc.wrapping_add(1);
-        println!("PC R2 --> {:X}", self.pc);
         let b = self.mem.read_byte(self.pc).unwrap();
-        println!("PC R3 --> {:X}", self.pc);
         self.pc = self.pc.wrapping_add(1);
-        println!("PC R4 --> {:X}", self.pc);
         b
     }
 
@@ -1485,6 +1471,57 @@ mod tests {
         ld_hl_r!(cpu.reg.c, StdReg::C);
         ld_hl_r!(cpu.reg.d, StdReg::D);
         ld_hl_r!(cpu.reg.e, StdReg::E);
+    }
+
+    #[test]
+    fn add_a_r() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! add {
+            ($r:expr) => {
+                cpu.reg.unset_z();
+                cpu.reg.unset_h();
+                cpu.reg.unset_n();
+                cpu.reg.a = 20;
+                assert_eq!(cpu.add_a_r($r), 4);
+                assert_eq!(cpu.reg.a, 21);
+                assert_eq!(cpu.reg.is_z(), false);
+                assert_eq!(cpu.reg.is_h(), false);
+                assert_eq!(cpu.reg.is_n(), false);
+            };
+        }
+
+
+        cpu.reg.b = 1;
+        add!(StdRegN::B);
+        cpu.reg.c = 1;
+        add!(StdRegN::C);
+        cpu.reg.d = 1;
+        add!(StdRegN::D);
+        cpu.reg.e = 1;
+        add!(StdRegN::E);
+        cpu.reg.h = 1;
+        add!(StdRegN::H);
+        cpu.reg.l = 1;
+        add!(StdRegN::L);
+
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 1).unwrap();
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.unset_c();
+        cpu.reg.a = 20;
+        assert_eq!(cpu.add_a_r(StdRegN::N), 8);
+        assert_eq!(cpu.reg.a, 21);
+        assert_eq!(cpu.reg.is_z(), false);
+        assert_eq!(cpu.reg.is_h(), false);
+        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_c(), false);
+
+        assert_eq!(cpu.pc, 0x8200 + 0x02);
     }
 
     #[test]
