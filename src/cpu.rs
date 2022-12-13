@@ -254,6 +254,7 @@ impl<'m> Cpu<'m> {
             0xAB => self.xor_r(StdReg::E),
             0xAC => self.xor_r(StdReg::H),
             0xAD => self.xor_r(StdReg::L),
+            0xAE => self.xor_r(StdReg::HL),
             0xC7 => self.rst_00(),        //tested
             0xCF => self.rst_08(),        //tested
             0xD7 => self.rst_10(),        //tested
@@ -263,6 +264,15 @@ impl<'m> Cpu<'m> {
             0xF7 => self.rst_30(),        //tested
             0xFF => self.rst_38(),        //tested
             0x1F => self.rr_n(StdReg::A), //tested
+            0x90 => self.sub_a_r(StdRegN::B),
+            0x91 => self.sub_a_r(StdRegN::C),
+            0x92 => self.sub_a_r(StdRegN::D),
+            0x93 => self.sub_a_r(StdRegN::E),
+            0x94 => self.sub_a_r(StdRegN::H),
+            0x95 => self.sub_a_r(StdRegN::L),
+            0x96 => self.sub_a_r(StdRegN::HL), //TODO
+            0x97 => self.sub_a_r(StdRegN::A),
+            0xD6 => self.sub_a_r(StdRegN::N),
             0x80 => self.add_a_r(StdRegN::B),
             0x81 => self.add_a_r(StdRegN::C),
             0x82 => self.add_a_r(StdRegN::D),
@@ -307,6 +317,7 @@ impl<'m> Cpu<'m> {
                     0x1C => self.rr_n(StdReg::H), //tested
                     0x1D => self.rr_n(StdReg::L), //tested
                     0x1E => self.rr_n(StdReg::HL),
+                    0x38 => self.srl(StdReg::B),
                     _ => {
                         println!("Opcode not implmented : CB {:#04X}", opcode);
                         std::process::abort()
@@ -350,6 +361,49 @@ impl<'m> Cpu<'m> {
         4
     }
 
+    fn sub_a_r(&mut self, reg: StdRegN) -> u8 {
+        let mut cycles = 4;
+
+        macro_rules! sub {
+            ($a:expr,$b:expr) => {{
+                if will_half_borrow($a, $b) {
+                    self.reg.set_h();
+                };
+                if will_borrow($a, $b) {
+                    self.reg.set_c();
+                };
+                $a = $a.wrapping_sub($b);
+                if $a == 0x00 {
+                    self.reg.set_z();
+                    self.reg.set_c();
+                } else {
+                    self.reg.unset_z();
+                }
+                self.reg.set_n();
+            }};
+        }
+
+        match reg {
+            StdRegN::A => sub!(self.reg.a, self.reg.a),
+            StdRegN::B => sub!(self.reg.a, self.reg.b),
+            StdRegN::C => sub!(self.reg.a, self.reg.c),
+            StdRegN::D => sub!(self.reg.a, self.reg.d),
+            StdRegN::E => sub!(self.reg.a, self.reg.e),
+            StdRegN::H => sub!(self.reg.a, self.reg.h),
+            StdRegN::L => sub!(self.reg.a, self.reg.l),
+            StdRegN::N => {
+                let amt = self.read_u8();
+                sub!(self.reg.a, amt);
+                self.pc = self.pc.wrapping_sub(1);
+                cycles = 8;
+            }
+            StdRegN::HL => println!("HL Not implemented"),
+        }
+
+        self.pc = self.pc.wrapping_add(1);
+        cycles
+    }
+
     fn add_a_r(&mut self, reg: StdRegN) -> u8 {
         let mut cycles = 4;
 
@@ -364,6 +418,9 @@ impl<'m> Cpu<'m> {
                 $a = $a.wrapping_add($b);
                 if $a == 0x00 {
                     self.reg.set_z();
+                    self.reg.set_c();
+                } else {
+                    self.reg.unset_z();
                 }
                 self.reg.unset_n();
             }};
@@ -695,7 +752,7 @@ impl<'m> Cpu<'m> {
             StdReg::E => xor!(self.reg.e),
             StdReg::H => xor!(self.reg.h),
             StdReg::L => xor!(self.reg.l),
-            StdReg::HL => todo!(),
+            StdReg::HL => xor!(self.mem.read_byte(self.reg.get_hl()).unwrap()),
         }
 
         self.pc = self.pc.wrapping_add(1);
@@ -1075,6 +1132,42 @@ impl<'m> Cpu<'m> {
         } else {
             self.reg.unset_c();
         }
+
+        self.pc = self.pc.wrapping_add(1);
+
+        cycles // HL = 16
+    }
+
+    fn srl(&mut self, reg: StdReg) -> u8 {
+        let mut cycles = 4;
+
+        macro_rules! srl {
+            ($a:expr) => {{
+                $a = $a >> 0x01;
+                if self.reg.is_c() {
+                    $a |= 0x80;
+                } else {
+                    $a &= 0x7F;
+                }
+            }};
+        }
+
+        match reg {
+            StdReg::A => srl!(self.reg.a),
+            StdReg::B => srl!(self.reg.b),
+            StdReg::C => srl!(self.reg.c),
+            StdReg::D => srl!(self.reg.d),
+            StdReg::E => srl!(self.reg.e),
+            StdReg::H => srl!(self.reg.h),
+            StdReg::L => srl!(self.reg.l),
+            StdReg::HL => todo!(),
+        };
+
+        // if c == 0x01 {
+        //     self.reg.set_c();
+        // } else {
+        //     self.reg.unset_c();
+        // }
 
         self.pc = self.pc.wrapping_add(1);
 
@@ -1474,6 +1567,69 @@ mod tests {
     }
 
     #[test]
+    fn sub_a_r() {
+        let mut memmap = MemoryMap::default();
+        let mut cpu = Cpu::load(&mut memmap);
+
+        macro_rules! sub {
+            ($r:expr) => {
+                cpu.reg.unset_z();
+                cpu.reg.unset_h();
+                cpu.reg.unset_n();
+                cpu.reg.a = 20;
+                assert_eq!(cpu.sub_a_r($r), 4);
+                assert_eq!(cpu.reg.a, 19);
+                assert_eq!(cpu.reg.is_z(), false);
+                assert_eq!(cpu.reg.is_h(), false);
+                assert_eq!(cpu.reg.is_n(), true);
+            };
+        }
+
+        cpu.reg.b = 1;
+        sub!(StdRegN::B);
+        cpu.reg.c = 1;
+        sub!(StdRegN::C);
+        cpu.reg.d = 1;
+        sub!(StdRegN::D);
+        cpu.reg.e = 1;
+        sub!(StdRegN::E);
+        cpu.reg.h = 1;
+        sub!(StdRegN::H);
+        cpu.reg.l = 1;
+        sub!(StdRegN::L);
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 1).unwrap();
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.unset_c();
+        cpu.reg.a = 20;
+        assert_eq!(cpu.sub_a_r(StdRegN::N), 8);
+        assert_eq!(cpu.reg.a, 19);
+        assert_eq!(cpu.reg.is_z(), false);
+        assert_eq!(cpu.reg.is_h(), false);
+        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_c(), false);
+        assert_eq!(cpu.pc, 0x8200 + 0x02);
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0x08).unwrap();
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.unset_c();
+        cpu.reg.a = 0xf8;
+        assert_eq!(cpu.sub_a_r(StdRegN::N), 8);
+        assert_eq!(cpu.reg.a, 0xf0);
+        assert_eq!(cpu.reg.is_z(), false);
+        assert_eq!(cpu.reg.is_h(), true);
+        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_c(), false);
+        assert_eq!(cpu.pc, 0x8200 + 0x02);
+    }
+
+    #[test]
     fn add_a_r() {
         let mut memmap = MemoryMap::default();
         let mut cpu = Cpu::load(&mut memmap);
@@ -1492,7 +1648,6 @@ mod tests {
             };
         }
 
-
         cpu.reg.b = 1;
         add!(StdRegN::B);
         cpu.reg.c = 1;
@@ -1505,7 +1660,6 @@ mod tests {
         add!(StdRegN::H);
         cpu.reg.l = 1;
         add!(StdRegN::L);
-
 
         cpu.pc = 0x8200;
         cpu.mem.write_byte(cpu.pc + 1, 1).unwrap();
@@ -1520,7 +1674,21 @@ mod tests {
         assert_eq!(cpu.reg.is_h(), false);
         assert_eq!(cpu.reg.is_n(), false);
         assert_eq!(cpu.reg.is_c(), false);
+        assert_eq!(cpu.pc, 0x8200 + 0x02);
 
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0x08).unwrap();
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.unset_c();
+        cpu.reg.a = 0xf8;
+        assert_eq!(cpu.add_a_r(StdRegN::N), 8);
+        assert_eq!(cpu.reg.a, 0);
+        assert_eq!(cpu.reg.is_z(), true);
+        assert_eq!(cpu.reg.is_h(), true);
+        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_c(), true);
         assert_eq!(cpu.pc, 0x8200 + 0x02);
     }
 
@@ -1856,7 +2024,6 @@ mod tests {
         cpu.mem.write_byte(cpu.pc + 2, amt[1]).unwrap();
 
         assert_eq!(cpu.jr(), 4 * 3);
-        println!("{} {}", cpu.pc, pc);
         assert_eq!(cpu.pc, pc - 0x000A + 2);
     }
 

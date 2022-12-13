@@ -337,6 +337,26 @@ pub fn will_carry(v1: u8, v2: u8) -> bool {
     ((v1 & 0x01) + (v2 & 0x01)) & 0x02 == 0x02
 }
 
+/// Returns true if the carry bit will be set
+/// when subtracting v1 and v2.
+///
+/// # Examples
+///
+/// ```
+/// use rust_boy::registers::will_borrow;
+///
+/// let v1 = 0b00000001;
+/// let v2 = 0b00000010;
+/// assert_eq!(will_borrow(v1, v2), true);
+///
+/// let v1 = 0b00000000;
+/// let v2 = 0b00000000;
+/// assert_eq!(will_borrow(v1, v2), false);
+/// ```
+pub fn will_borrow(v1: u8, v2: u8) -> bool {
+   v1 < v2 
+}
+
 pub fn dec(value: u8, amt: u8) -> (u8, bool) {
     (value.wrapping_sub(amt), will_half_borrow(value, amt))
 }
