@@ -89,19 +89,8 @@ impl<'m> Cpu<'m> {
     }
 
     pub fn step(&mut self) -> u8 {
-        /* let mut start = 0x8000;
-        for i in 0..10 {
-            self.mem.print_tile(start);
-            start = start + (i * 16);
-        } */
         let opcode = self.mem.read_byte(self.pc).unwrap();
-        // println!(
-        //     "C{} H{} N{} Z{}",
-        //     self.reg.is_c(),
-        //     self.reg.is_h(),
-        //     self.reg.is_n(),
-        //     self.reg.is_z()
-        // );
+        // println!("{:X}",opcode);
         match opcode {
             0x00 => self.nop(),                 //tested
             0x0F => self.rrca(),                //tested
@@ -247,14 +236,16 @@ impl<'m> Cpu<'m> {
             0xB4 => self.or_a_r(StdReg::H),
             0xB5 => self.or_a_r(StdReg::L),
             0xB7 => self.or_a_r(StdReg::A),
-            0xAF => self.xor_r(StdReg::A),
-            0xA8 => self.xor_r(StdReg::B),
-            0xA9 => self.xor_r(StdReg::C),
-            0xAA => self.xor_r(StdReg::D),
-            0xAB => self.xor_r(StdReg::E),
-            0xAC => self.xor_r(StdReg::H),
-            0xAD => self.xor_r(StdReg::L),
-            0xAE => self.xor_r(StdReg::HL),
+            0xB6 => self.or_a_r(StdReg::HL),
+            0xAF => self.xor_r(StdRegN::A),
+            0xA8 => self.xor_r(StdRegN::B),
+            0xA9 => self.xor_r(StdRegN::C),
+            0xAA => self.xor_r(StdRegN::D),
+            0xAB => self.xor_r(StdRegN::E),
+            0xAC => self.xor_r(StdRegN::H),
+            0xAD => self.xor_r(StdRegN::L),
+            0xAE => self.xor_r(StdRegN::HL),
+            0xEE => self.xor_r(StdRegN::N),
             0xC7 => self.rst_00(),        //tested
             0xCF => self.rst_08(),        //tested
             0xD7 => self.rst_10(),        //tested
@@ -308,6 +299,7 @@ impl<'m> Cpu<'m> {
             0xCB => {
                 self.pc = self.pc.wrapping_add(1);
                 let opcode = self.mem.read_byte(self.pc).unwrap();
+                // println!("{:X}",opcode);
                 match opcode {
                     0x1F => self.rr_n(StdReg::A), //tested
                     0x18 => self.rr_n(StdReg::B), //tested
@@ -368,10 +360,14 @@ impl<'m> Cpu<'m> {
             ($a:expr,$b:expr) => {{
                 if will_half_borrow($a, $b) {
                     self.reg.set_h();
-                };
+                } else {
+                    self.reg.unset_h();
+                }
                 if will_borrow($a, $b) {
                     self.reg.set_c();
-                };
+                } else {
+                    self.reg.unset_c();
+                }
                 $a = $a.wrapping_sub($b);
                 if $a == 0x00 {
                     self.reg.set_z();
@@ -448,7 +444,7 @@ impl<'m> Cpu<'m> {
     }
 
     fn adc_a_n(&mut self, reg: StdRegN) -> u8 {
-        let cycles = 4;
+        let mut cycles = 4;
 
         let carry = self.reg.get_carry();
 
@@ -473,7 +469,12 @@ impl<'m> Cpu<'m> {
             StdRegN::H => adc!(self.reg.a, self.reg.h),
             StdRegN::L => adc!(self.reg.a, self.reg.l),
             StdRegN::HL => todo!(),
-            StdRegN::N => todo!(),
+            StdRegN::N => {
+                let amt = self.read_u8();
+                adc!(self.reg.a, amt);
+                self.pc = self.pc.wrapping_sub(1);
+                cycles = 8;
+            }
         }
 
         self.pc = self.pc.wrapping_add(1);
@@ -726,14 +727,14 @@ impl<'m> Cpu<'m> {
             StdReg::E => or!(self.reg.e),
             StdReg::H => or!(self.reg.h),
             StdReg::L => or!(self.reg.l),
-            StdReg::HL => todo!(),
+            StdReg::HL => or!(self.mem.read_byte(self.reg.get_hl()).unwrap()),
         }
 
         self.pc = self.pc.wrapping_add(1);
         4
     }
 
-    fn xor_r(&mut self, reg: StdReg) -> u8 {
+    fn xor_r(&mut self, reg: StdRegN) -> u8 {
         macro_rules! xor {
             ($a:expr) => {{
                 self.reg.a = self.reg.a ^ $a;
@@ -745,14 +746,18 @@ impl<'m> Cpu<'m> {
         }
 
         match reg {
-            StdReg::A => xor!(self.reg.a),
-            StdReg::B => xor!(self.reg.b),
-            StdReg::C => xor!(self.reg.c),
-            StdReg::D => xor!(self.reg.d),
-            StdReg::E => xor!(self.reg.e),
-            StdReg::H => xor!(self.reg.h),
-            StdReg::L => xor!(self.reg.l),
-            StdReg::HL => xor!(self.mem.read_byte(self.reg.get_hl()).unwrap()),
+            StdRegN::A => xor!(self.reg.a),
+            StdRegN::B => xor!(self.reg.b),
+            StdRegN::C => xor!(self.reg.c),
+            StdRegN::D => xor!(self.reg.d),
+            StdRegN::E => xor!(self.reg.e),
+            StdRegN::H => xor!(self.reg.h),
+            StdRegN::L => xor!(self.reg.l),
+            StdRegN::HL => xor!(self.mem.read_byte(self.reg.get_hl()).unwrap()),
+            StdRegN::N => {
+                xor!(self.read_u8());
+                self.pc = self.pc.wrapping_sub(1);
+            }
         }
 
         self.pc = self.pc.wrapping_add(1);
@@ -1127,6 +1132,10 @@ impl<'m> Cpu<'m> {
             }
         };
 
+        self.reg.unset_z();
+        self.reg.unset_n();
+        self.reg.unset_h();
+
         if c == 0x01 {
             self.reg.set_c();
         } else {
@@ -1139,16 +1148,16 @@ impl<'m> Cpu<'m> {
     }
 
     fn srl(&mut self, reg: StdReg) -> u8 {
-        let mut cycles = 4;
+        let cycles = 4;
 
         macro_rules! srl {
             ($a:expr) => {{
-                $a = $a >> 0x01;
-                if self.reg.is_c() {
-                    $a |= 0x80;
-                } else {
-                    $a &= 0x7F;
+                if $a & 0x01 == 0x01 {
+                    self.reg.set_c();
                 }
+                $a = $a >> 0x01;
+                self.reg.unset_h();
+                self.reg.unset_n();
             }};
         }
 
@@ -1609,7 +1618,7 @@ mod tests {
         assert_eq!(cpu.reg.a, 19);
         assert_eq!(cpu.reg.is_z(), false);
         assert_eq!(cpu.reg.is_h(), false);
-        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_n(), true);
         assert_eq!(cpu.reg.is_c(), false);
         assert_eq!(cpu.pc, 0x8200 + 0x02);
 
@@ -1623,8 +1632,23 @@ mod tests {
         assert_eq!(cpu.sub_a_r(StdRegN::N), 8);
         assert_eq!(cpu.reg.a, 0xf0);
         assert_eq!(cpu.reg.is_z(), false);
-        assert_eq!(cpu.reg.is_h(), true);
-        assert_eq!(cpu.reg.is_n(), false);
+        assert_eq!(cpu.reg.is_h(), false);
+        assert_eq!(cpu.reg.is_n(), true);
+        assert_eq!(cpu.reg.is_c(), false);
+        assert_eq!(cpu.pc, 0x8200 + 0x02);
+
+        cpu.pc = 0x8200;
+        cpu.mem.write_byte(cpu.pc + 1, 0x05).unwrap();
+        cpu.reg.unset_z();
+        cpu.reg.unset_h();
+        cpu.reg.unset_n();
+        cpu.reg.unset_c();
+        cpu.reg.a = 0xDF;
+        assert_eq!(cpu.sub_a_r(StdRegN::N), 8);
+        assert_eq!(cpu.reg.a, 0xDA);
+        assert_eq!(cpu.reg.is_z(), false);
+        assert_eq!(cpu.reg.is_h(), false);
+        assert_eq!(cpu.reg.is_n(), true);
         assert_eq!(cpu.reg.is_c(), false);
         assert_eq!(cpu.pc, 0x8200 + 0x02);
     }

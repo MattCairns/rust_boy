@@ -1,3 +1,4 @@
+use std::env::{self, args};
 use rust_boy::cartridge::Cartridge;
 use rust_boy::cpu::Cpu;
 use rust_boy::interrupts::InterruptHandler;
@@ -5,7 +6,9 @@ use rust_boy::memorymap::MemoryMap;
 
 fn main() {
     // LOAD CARTRIDGE
-    let rom_path = "roms/09-oprr.gb";
+    let args: Vec<String> = env::args().collect();
+    let rom_path = &args[1];
+    println!("{}", rom_path);
     let cartridge = Cartridge::load(rom_path);
     let memmap = MemoryMap::default();
     memmap.load_cartridge(&cartridge);
